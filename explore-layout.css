@@ -1,0 +1,184 @@
+/* The map zoom controls affect the scene, never the navigation. On desktop the
+   card fits the available height; small windows retain an accessible scroll.
+   Narrow screens use document flow so no mission can fall below a clipped map. */
+#explore-screen {
+  min-height: 0;
+}
+.quest-panel {
+  /* The trail's pale-green surface continues through unused card space. The
+     introductory sections keep their cream paper above the itinerary. */
+  background: #f1f3e9;
+  top: 132px;
+  bottom: 44px;
+  max-height: calc(100% - 176px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #a4b299 #f1f3e9;
+  scroll-padding: 12px;
+}
+.quest-topline,
+.quest-content { background: #faf9f2; }
+.quest-art {
+  background-color: #faf9f2;
+}
+.quest-panel:focus-visible {
+  outline: 2px solid #8b9d80;
+  outline-offset: 3px;
+}
+.quest-panel::-webkit-scrollbar { width: 6px; }
+.quest-panel::-webkit-scrollbar-thumb {
+  background: #a4b299;
+  border: 1px solid #f1f3e9;
+  border-radius: 6px;
+}
+.quest-content, .itinerary { min-width: 0; }
+.quest-content h2, .route-item { overflow-wrap: anywhere; }
+.quest-meta { flex-wrap: wrap; gap: 6px; }
+
+@media (min-width: 801px) {
+  .chapter-heading { top: 24px; }
+  .chapter-heading h1 { margin-top: 10px; }
+  .quest-panel { width: 282px; }
+  .quest-art { height: 72px; }
+  .quest-art .hotpot-symbol { margin-top: 0; }
+  .quest-art .hotpot-symbol .ui-icon { width: 58px; height: 58px; }
+  .quest-content { padding: 10px 20px 16px; }
+  .quest-topline { padding-top: 13px; }
+  .quest-goals { margin-bottom: 14px; }
+  .itinerary { padding: 14px 19px; }
+  .route-item { min-height: 36px; padding: 6px 2px; }
+}
+/* Free space comes from the decorative illustration and generous gaps, not
+   from shrinking learning text or concealing trail entries. */
+@media (min-width: 801px) and (max-height: 860px) {
+  .quest-art { display: none; }
+  .quest-topline { padding-top: 12px; }
+  .quest-content { padding-top: 12px; padding-bottom: 12px; }
+  .quest-content h2 { font-size: 23px; margin: 8px 0; }
+  .quest-content p { margin-bottom: 10px; line-height: 1.5; }
+  .quest-goals { gap: 5px; margin-bottom: 12px; }
+  .quest-content .primary { padding: 11px 15px; }
+  .quest-meta { margin-top: 9px; }
+  .itinerary { padding: 12px 19px; }
+  .itinerary-heading { margin-bottom: 5px; }
+}
+@media (min-width: 801px) and (max-height: 760px) {
+  .quest-panel { top: 112px; bottom: 34px; max-height: calc(100% - 146px); }
+  .quest-topline { display: none; }
+  .itinerary { padding-top: 10px; padding-bottom: 10px; }
+}
+
+@media (max-width: 800px) {
+  #explore-screen {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto clamp(340px, 54dvh, 540px) auto auto auto auto auto;
+    padding: 20px 18px 24px;
+    gap: 12px;
+  }
+  .chapter-heading {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 1;
+    padding: 2px 0 10px;
+    width: fit-content;
+  }
+  .chapter-heading h1 { margin: 8px 0 0; }
+  #world-container {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    margin: 0 -18px;
+  }
+  .location-tag { top: 26px; right: 26px; }
+  .world-controls {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    justify-self: end;
+    margin-bottom: 8px;
+  }
+  .guide-tip {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 3;
+    max-width: none;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 12px;
+  }
+  .guide-tip > div:not(.yu-avatar) { flex: 1; }
+  .route-guide {
+    position: relative;
+    inset: auto;
+    transform: none;
+    grid-column: 1;
+    grid-row: 4;
+    justify-self: center;
+    align-items: center;
+  }
+  .quest-panel {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 5;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .quest-content { padding: 18px; border-radius: 14px 0 0 14px; }
+  .quest-content p { font-size: 11px; }
+  .quest-goals { display: flex; font-size: 10px; }
+  .quest-kicker { font-size: 8px; }
+  .quest-meta { font-size: 8px; }
+  .itinerary { padding: 18px; border-radius: 0 14px 14px 0; }
+  .itinerary-heading { font-size: 9px; }
+  .route-item { min-height: 40px; font-size: 11px; }
+  .route-number { width: 22px; height: 22px; font-size: 10px; }
+  .explore-hint {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 6;
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 9px;
+  }
+  .save-indicator {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 7;
+    justify-self: center;
+  }
+}
+@media (max-width: 540px) {
+  .quest-panel { grid-template-columns: minmax(0, 1fr); }
+  .quest-content { padding: 20px; border-radius: 14px 14px 0 0; }
+  .quest-content h2 { font-size: 24px; }
+  .quest-content .primary { font-size: 12px; padding: 13px 16px; }
+  .itinerary {
+    border-left: 0;
+    border-top: 1px solid #e1e6d7;
+    border-radius: 0 0 14px 14px;
+    padding: 18px 20px;
+  }
+  .route-item { font-size: 12px; min-height: 44px; }
+  .chapter-heading h1 { font-size: 28px; }
+  .chapter-heading h1 span { display: block; margin: 2px 0 0; }
+}

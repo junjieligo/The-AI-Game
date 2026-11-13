@@ -1,0 +1,61 @@
+/* Font-independent icons: inherit the same colour and scale on iPad and desktop. */
+.ui-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+  pointer-events: none;
+}
+[data-ui-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-button,
+.world-controls button,
+.modal-close,
+.arrival-actions .arrival-music {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+/* Inline SVGs used to inherit text baselines and native button padding, moving
+   the artwork up and right. All button icons now occupy a centred block box. */
+button .ui-icon {
+  display: block;
+  vertical-align: 0;
+}
+button [data-ui-icon],
+.passport-button > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.listen-button { line-height: 1; }
+.modal-close .ui-icon { width: 18px; height: 18px; }
+.arrival-skip { display: inline-flex; align-items: center; justify-content: center; }
+.primary > span,
+.secondary > span,
+.hint-button > span { display: inline-flex; align-items: center; }
+.guide-tip #tip-listen {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  line-height: 0;
+}
+.guide-tip #tip-listen .ui-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  vertical-align: 0;
+}
+.listen-button .ui-icon { width: 18px; height: 18px; }
+.icon-button .ui-icon { width: 22px; height: 22px; }
+.world-controls .ui-icon { width: 22px; height: 22px; }
+.hotpot-symbol .ui-icon { stroke-width: 1.25; }
+.arrival-music .ui-icon { width: 19px; height: 19px; }
+.arrival-route .ui-icon { width: 24px; height: 24px; }

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#e9eee5" />
+    <meta
+      name="description"
+      content="Explore a little world. Learn a little Mandarin. A 3D Chongqing adventure with Yu the cat."
+    />
+    <title>Trip to The East · 东游记</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23b84f38'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-size='42' fill='%23fff6df'%3E东%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./style.css?v=1.7" />
+    <link rel="stylesheet" href="./arrival.css?v=1.10" />
+    <link rel="stylesheet" href="./hotpot-intro.css?v=1.26" />
+    <link rel="stylesheet" href="./ui-icons.css?v=1.15" />
+    <link rel="stylesheet" href="./explore-layout.css?v=1.15" />
+    <link rel="stylesheet" href="./activities.css?v=1.7" />
+    <link rel="stylesheet" href="./speaking-practice.css?v=1.7" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <a href="#" class="brand" aria-label="Trip to The East home"
+          ><span class="brand-seal">东</span
+          ><span class="brand-copy"
+            ><strong
+              >Trip to The East
+              <span class="brand-chinese">东游记</span></strong
+            ><small>A Mandarin adventure</small></span
+          ></a
+        >
+        <nav aria-label="Main navigation">
+          <button class="nav-button active" id="explore-nav">
+            Explore <span>探索</span></button
+          ><button class="nav-button" id="phrasebook-nav">
+            Phrasebook <span>词语本</span></button
+          ><button class="nav-button" id="journal-nav">
+            Travel journal <span>旅行记</span>
+          </button>
+        </nav>
+        <div class="header-right">
+          <button
+            class="icon-button"
+            id="music-toggle"
+            aria-label="Background music"
+            aria-pressed="true"
+            title="Background music"
+          >
+            <span data-ui-icon="music" aria-hidden="true"></span>
+          </button>
+          <button
+            class="icon-button effects-toggle"
+            id="effects-toggle"
+            aria-label="Button sound effects"
+            aria-pressed="true"
+            title="Button sounds"
+          >
+            <span data-ui-icon="sparkle" aria-hidden="true"></span>
+          </button>
+          <button
+            class="icon-button sound-toggle"
+            id="sound-toggle"
+            title="Toggle pronunciation audio"
+            aria-label="Turn pronunciation audio off"
+          >
+            <span data-ui-icon="sound" aria-hidden="true"></span></button
+          ><button id="passport-button" class="passport-button">
+            <span><span data-ui-icon="sparkle" aria-hidden="true"></span></span> <span id="stamp-count">0 / 5</span>
+            <span class="passport-label">stamps</span>
+          </button>
+        </div>
+      </header>
+      <main id="explore-screen">
+        <div id="world-container">
+          <canvas
+            id="world"
+            aria-label="Interactive 3D Chongqing. Drag to rotate, use arrow keys to walk, or select a place."
+            tabindex="0"
+          ></canvas>
+          <div id="world-loading">
+            <span class="loading-seal">东</span>
+            <p>A little adventure is taking shape…</p>
+          </div>
+        </div>
+        <div class="chapter-heading">
+          <div class="eyebrow">
+            <span class="tiny-line"></span> CHAPTER 01 <span>·</span> THE
+            MOUNTAIN CITY
+          </div>
+          <h1>Chongqing <span lang="zh">重庆</span></h1>
+        </div>
+        <aside class="quest-panel" aria-label="Your adventure" tabindex="0">
+          <div class="quest-topline">
+            <span class="eyebrow">NEXT STOP</span
+            ><span class="leaf-icon"><span data-ui-icon="sparkle" aria-hidden="true"></span></span>
+          </div>
+          <div class="quest-art">
+            <span class="steam">∿ ∿ ∿</span><span class="hotpot-symbol"><span data-ui-icon="hotpot" aria-hidden="true"></span></span
+            ><span class="art-spark one"><span data-ui-icon="sparkle" aria-hidden="true"></span></span
+            ><span class="art-spark two"><span data-ui-icon="sparkle" aria-hidden="true"></span></span>
+          </div>
+          <div class="quest-content">
+            <div class="quest-kicker" id="quest-kicker">
+              MISSION 01 · HOT POT RESTAURANT
+            </div>
+            <h2 id="quest-title">A taste of Chongqing</h2>
+            <p id="quest-description">
+              Your journey begins with a warm welcome — and a warm meal.
+            </p>
+            <div id="quest-goals" class="quest-goals">
+              <span>你好 · Say hello</span
+              ><span>点餐 · Order food & water</span>
+            </div>
+            <button class="primary" id="start-mission">
+              Meet Yu & begin <span><span data-ui-icon="arrow-up-right" aria-hidden="true"></span></span>
+            </button>
+            <div class="quest-meta">
+              <span><span data-ui-icon="clock" aria-hidden="true"></span> About 5 minutes</span><span>Beginner friendly</span>
+            </div>
+          </div>
+          <div class="itinerary">
+            <div class="itinerary-heading">
+              <span>YOUR TRAIL</span><span id="route-progress">0 of 5</span>
+            </div>
+            <div id="route-list"></div>
+          </div>
+        </aside>
+        <div class="location-tag">
+          <span class="location-dot"></span>
+          <div>
+            <strong lang="zh">洪崖洞</strong><span>HONGYADONG · CHONGQING</span>
+          </div>
+          <div
+            class="game-time-display"
+            id="game-time-display"
+            aria-label="Game day and cycle timer"
+          >
+            <span id="game-phase-icon" aria-hidden="true"><span data-ui-icon="sun" aria-hidden="true"></span></span>
+            <div>
+              <span class="game-clock-row"
+                ><span id="game-day">Day 1</span>
+                <span id="game-clock">00:00</span></span
+              ><small id="game-phase">Chongqing</small>
+            </div>
+          </div>
+        </div>
+        <div class="route-guide">
+          <button id="next-hint" class="hint-button">
+            <b>!</b> Next stop <span><span data-ui-icon="arrow-right" aria-hidden="true"></span></span></button
+          ><span id="route-instruction" role="status"
+            >Tap to follow Yu’s trail.</span
+          >
+        </div>
+        <div class="scene-caption">
+          <span class="caption-stamp">山城</span
+          ><span
+            >A city of a thousand steps.<br /><strong
+              >Your story starts with 你好.</strong
+            ></span
+          >
+        </div>
+        <div class="world-controls" aria-label="World controls">
+          <button
+            id="rotate-left"
+            aria-label="Rotate view left"
+            title="Rotate left"
+          >
+            <span data-ui-icon="rotate-left" aria-hidden="true"></span></button
+          ><button id="reset-camera" aria-label="Reset view" title="Reset view">
+            <span data-ui-icon="home" aria-hidden="true"></span></button
+          ><button
+            id="rotate-right"
+            aria-label="Rotate view right"
+            title="Rotate right"
+          >
+            <span data-ui-icon="rotate-right" aria-hidden="true"></span></button
+          ><span></span><button id="zoom-in" aria-label="Zoom in"><span data-ui-icon="plus" aria-hidden="true"></span></button
+          ><button id="zoom-out" aria-label="Zoom out"><span data-ui-icon="minus" aria-hidden="true"></span></button>
+        </div>
+        <div class="guide-tip">
+          <div class="yu-avatar" id="yu-tip-avatar"></div>
+          <div>
+            <div class="yu-tip-name">YU <span>YOUR LOCAL GUIDE</span></div>
+            <p id="yu-tip-text"></p>
+          </div>
+          <button
+            id="tip-listen"
+            aria-label="Listen to Yu"
+            title="Listen to Yu"
+          >
+            <span data-ui-icon="play" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="explore-hint">
+          <span><span data-ui-icon="move" aria-hidden="true"></span></span> Drag to look around <i>·</i> Tap a place to visit
+          <i>·</i> Arrow keys to walk
+        </div>
+        <div class="save-indicator">
+          <span></span> Your journey saves on this device
+        </div>
+      </main>
+    </div>
+    <div id="modal-root"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./app.js?v=1.37"></script>
+  </body>
+</html>

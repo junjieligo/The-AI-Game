@@ -1,0 +1,22 @@
+body.in-hotpot-intro { overflow: hidden; }
+.hotpot-intro { position: fixed; inset: 0; z-index: 1100; isolation: isolate; overflow: hidden; background: #faf9f2; color: #294f46; font-family: var(--sans); }
+.hotpot-intro-canvas { display: grid; place-items: center; width: 100%; height: 100%; padding: 80px 24px 24px; box-sizing: border-box; }
+.hotpot-intro-canvas > svg { display: block; width: 100%; height: 100%; max-height: 100%; }
+.hotpot-intro-canvas[hidden] { display: none; }
+.modal-backdrop.hotpot-handoff { animation: fadeIn .3s ease both; }
+.hotpot-intro-shade { display: none; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg,#fbf5e9b3,transparent 25%,transparent 85%,#66452f22); }
+.hotpot-intro-actions { position: absolute; top: max(28px,env(safe-area-inset-top)); right: max(32px,env(safe-area-inset-right)); display: flex; align-items: center; gap: 10px; }
+.hotpot-intro-actions button { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 18px; gap: 10px; border: 1px solid #d3d8c5; border-radius: 24px; background: #fcf9efed; color: #35574c; box-shadow: 0 3px 0 #735c421c; font: 800 14px/1 var(--sans); cursor: pointer; }
+.hotpot-intro-actions button:hover { background: #fffdf6; }
+.hotpot-intro-actions button:focus-visible { outline: 3px solid #bf7952; outline-offset: 4px; }
+.hotpot-intro-actions .hotpot-intro-sound { width: 44px; padding: 0; }
+.hotpot-intro-actions .ui-icon { display: block; width: 21px; height: 21px; }
+.hotpot-intro-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #8a64582b; }
+.hotpot-intro-progress span { display: block; height: 100%; background: #c47b51; transform: scaleX(0); transform-origin: left; }
+.hotpot-intro-fallback { position: absolute; inset: 15% 5% 5%; display: grid; place-items: center; }
+.hotpot-intro-fallback svg { width: min(90%,850px); max-height: 100%; }
+@media(max-width:600px) {
+  .hotpot-intro-canvas { padding: 82px 8px 18px; }
+  .hotpot-intro-actions { top: max(22px,env(safe-area-inset-top)); right: max(18px,env(safe-area-inset-right)); gap: 7px; }
+  .hotpot-intro-actions button { padding: 0 12px; font-size: 12px; gap: 7px; }
+}

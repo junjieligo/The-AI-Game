@@ -1,0 +1,42 @@
+body.arriving { overflow: hidden; }
+.arrival-screen { position: fixed; inset: 0; z-index: 1000; background: #dcece5; color: #284e48; overflow: hidden; isolation: isolate; font-family: var(--sans); }
+.arrival-canvas { display: block; width: 100%; height: 100%; }
+.arrival-vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg,#e9f1e415,transparent 25%,transparent 73%,#102b3838); }
+.arrival-top { position: absolute; inset: max(24px,env(safe-area-inset-top)) 36px auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.arrival-brand { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 850; letter-spacing: .18em; }
+.arrival-brand > span { width: 35px; height: 40px; border: 1px solid #eac3a1; border-radius: 7px; background: #b75d40; color: #fff4dd; display: grid; place-items: center; font: 700 27px var(--chinese); box-shadow: inset 0 0 0 2px #b75d40,inset 0 0 0 3px #edc9aa; }
+.arrival-actions { display: flex; align-items: center; gap: 10px; }
+.arrival-actions button { background: #fffaf0e8; color: #294f47; border: 1px solid #e6dfc9; box-shadow: 0 3px 0 #284e481c; height: 42px; cursor: pointer; font: 800 14px var(--sans); }
+.arrival-actions button:hover { background: #fffdf5; }
+.arrival-actions button:focus-visible { outline: 3px solid #d79550; outline-offset: 4px; }
+.arrival-music { width: 42px; border-radius: 50%; font-size: 21px !important; }
+.arrival-skip { padding: 0 18px; border-radius: 24px; }
+.arrival-skip span { margin-left: 12px; }
+.arrival-caption { position: absolute; top: 14%; left: 6%; max-width: 88%; pointer-events: none; transition: color .6s; text-shadow: 0 2px 22px #e9f1e433; }
+.arrival-route { font-size: 11px; font-weight: 850; letter-spacing: .2em; margin-bottom: 14px; display: flex; align-items: center; gap: 20px; }
+.arrival-route span { font-size: 24px; line-height: 12px; font-weight: 400; }
+.arrival-caption h1 { font-family: var(--chinese); font-size: clamp(26px,4.3vw,58px); line-height: 1.3; margin: 0; font-weight: 800; letter-spacing: .03em; }
+.arrival-subtitle { font-size: clamp(15px,1.8vw,22px); font-weight: 650; margin: 10px 0 0; }
+.arrival-screen[data-night="true"],.arrival-screen[data-phase="city"],.arrival-screen[data-phase="arrival"] { color: #fff2d7; }
+.arrival-screen[data-phase="city"] .arrival-caption,.arrival-screen[data-phase="arrival"] .arrival-caption { text-shadow: 0 2px 18px #16343c88; }
+.arrival-bottom { position: absolute; bottom: max(25px,env(safe-area-inset-bottom)); left: 36px; right: 36px; display: flex; justify-content: space-between; gap: 20px; pointer-events: none; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+.arrival-progress { height: 3px; position: absolute; bottom: 0; left: 0; right: 0; background: #fff4d529; }
+.arrival-progress span { display: block; height: 100%; background: #edb76c; transform: scaleX(0); transform-origin: left; }
+.arrival-postcard { position: absolute; inset: 20% 10% 10%; display: grid; place-items: center; }
+.arrival-postcard svg { width: min(100%,800px); }
+.arrival-fallback[data-phase] { background: #dcece5; color: #284e48; }
+.arrival-fallback[data-phase] .arrival-caption { text-shadow: none; }
+.journal-arrival { display: block; margin: 18px 0 0; color: #496b5a; background: transparent; border: 0; padding: 8px 0; text-decoration: underline; text-underline-offset: 4px; font: 750 14px var(--sans); cursor: pointer; }
+@media(max-width:600px) {
+  .arrival-top { left: 20px; right: 20px; top: max(18px,env(safe-area-inset-top)); gap: 8px; }
+  .arrival-brand { font-size: 8px; letter-spacing: .12em; gap: 8px; }
+  .arrival-brand > span { width: 29px; height: 34px; font-size: 23px; }
+  .arrival-actions { gap: 7px; }
+  .arrival-actions button { height: 40px; }
+  .arrival-skip { padding: 0 13px; }
+  .arrival-skip span { margin-left: 5px; }
+  .arrival-caption { top: 16%; left: 7%; }
+  .arrival-route { font-size: 9px; margin-bottom: 12px; }
+  .arrival-bottom { left: 22px; right: 22px; font-size: 9px; letter-spacing: .09em; }
+}
+@media(prefers-reduced-motion:reduce) { .arrival-caption { transition: none; } }
