@@ -79,6 +79,9 @@ export function createMountainGeometry(profile) {
   }
   const top = (levels.length - 1) * radial;
   for (let i = 0; i < radial; i++) indices.push(top + i, apex, top + (i + 1) % radial);
+  // Close the original convex base ring, facing down. This adds no vertices,
+  // changes no silhouette, and needs no separate pedestal beneath the peaks.
+  for (let i = 1; i < radial - 1; i++) indices.push(0, i, i + 1);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
   geometry.setIndex(indices);

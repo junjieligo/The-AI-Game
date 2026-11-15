@@ -7,10 +7,11 @@ import { createYuModel, createYuHeadroomController } from "./yu.js?v=1.16";
 import { createTrailFollower } from "./follower.js?v=1.16";
 import { createOcclusionController } from "./occlusion.js?v=1.14";
 import { createWalkwayPaving, STAIRCASES } from "./walkway-surfaces.js?v=1.16";
+import { createStairFootingController } from "./stair-footing.js?v=1.48";
 import { createRoundedSlabGeometry, RETAINING_WALLS, createRetainingWallCourses } from "./terrace-surfaces.js?v=1.14";
 import { PROMENADE_LANTERN_POSTS } from "./scenery-layout.js?v=1.15";
-import { MOUNTAINS, createMountainGeometry } from "./mountains.js?v=1.38";
-import { LANDSCAPE_GROUND, createLandscapeGroundGeometry, createRiverGeometry } from "./landscape-ground.js?v=1.46";
+import { MOUNTAINS, createMountainGeometry } from "./mountains.js?v=1.48";
+import { LANDSCAPE_GROUND, createRiverGeometry } from "./landscape-ground.js?v=1.48";
 
 import {
   NODES,
@@ -510,13 +511,6 @@ export function createWorld(
   river.name = "foreground-river";
   river.receiveShadow = true;
   root.add(river);
-  // Continuous dry ground joins the mountain feet to the city. Only its
-  // foreground edge meets the river: Hongyadong sits against the hillside.
-  const bank = new THREE.Mesh(createLandscapeGroundGeometry(), material(LANDSCAPE_GROUND.bankColour));
-  bank.name = "mountain-mainland";
-  bank.receiveShadow = true;
-  bank.castShadow = true;
-  root.add(bank);
   const addRetainingWall = ({ id, slab }) => {
     const { width, depth, height, radius, x, y, z } = slab;
     const mesh = roundedSlab(width, depth, height, radius, x, y, z, C.cliff);
@@ -1428,6 +1422,7 @@ export function createWorld(
   avatar.scale.setScalar(0.37);
   player.add(avatar);
   const legs = avatar.userData.legs;
+  const stairFooting = createStairFootingController({ avatar });
   const neighbours = createNeighbourhood({
     root, host, structures: occludingStructures,
     onResident(id) { stopWalking(); onResident(id); },
@@ -1924,6 +1919,9 @@ export function createWorld(
       player.rotation.y = residentArrivalFacing;
       residentArrivalFacing = null;
     }
+    // Correct visible shoes against each tread after the final facing/leg pose.
+    // The navigation position, route timing and Yu's trail remain unchanged.
+    stairFooting.update({ walking: difference.lengthSq() > 0.00000001, walkPhase });
     destination.material.opacity = walking
       ? 0.65 + Math.sin(elapsed * 4) * 0.2
       : 0;

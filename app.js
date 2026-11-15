@@ -25,7 +25,7 @@ import {
 } from "./orders.js?v=1.7";
 import { getGuideLine } from "./guide-lines.js?v=1.7";
 import { getGameTimeState } from "./game-time.js?v=1.7";
-import { createWorld } from "./world.js?v=1.47";
+import { createWorld } from "./world.js?v=1.48";
 import {
   LESSONS as BASE_LESSONS,
   PHRASES as BASE_PHRASES,

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "release": "5b95f6062ad1ae95d305f839ca2a3b6ec182f929a0eb30896e73c33d05ee8809",
+  "release": "6d26bc3e02c7a733a0c7417fc9c6d270b3203995a071fc8901de9ca10b0ef963",
   "files": [
     {
       "path": "activities.css",
@@ -15,7 +15,7 @@
     {
       "path": "app.js",
       "bytes": 58618,
-      "sha256": "ac4005c8279cbf7387a4ccde5066e77b1e225a6f5dc88e49169e6026ec9242ed"
+      "sha256": "00012055229d7e9be1022d0c6be36e1a1e6fad38a6f3a8fe1cb8a7d6e2846aaf"
     },
     {
       "path": "arrival-markers.js",
@@ -920,12 +920,12 @@
     {
       "path": "index.html",
       "bytes": 8977,
-      "sha256": "7d1b0bef33a7a6b6638b167c552a9a3987b3b1c38c61d9fd4dd614a4738ee9c0"
+      "sha256": "33b217c3c8cf3b65e9343cbd4fedb8b0bb15e92053dfb79c531663c157919708"
     },
     {
       "path": "landscape-ground.js",
-      "bytes": 4638,
-      "sha256": "357d86fba9b5e8d8f84455d23392058850a810b473804780a660bdd583016adc"
+      "bytes": 3081,
+      "sha256": "3c50a6ed75319cc6a8f76067ff2d0cbb885a4cd2b5cf4fd9173f07e57f9fca0c"
     },
     {
       "path": "lantern-intro-audio.js",
@@ -969,8 +969,8 @@
     },
     {
       "path": "mountains.js",
-      "bytes": 3983,
-      "sha256": "1dcfb8f8ba5cac10a1b17ab8c8a7f0bda602c80754f34e6af9a30b92bfe0dadd"
+      "bytes": 4205,
+      "sha256": "d933c1c572da5e19416592fbe5666dae02b0db21b6aa1e73ea2fefb1d7c40971"
     },
     {
       "path": "name-recordings.js",
@@ -1068,6 +1068,11 @@
       "sha256": "62bbff15105d720ec423d5e207f36cf4b6d9becc3d4c11c2b64dbf1fb3636cd1"
     },
     {
+      "path": "stair-footing.js",
+      "bytes": 4553,
+      "sha256": "52bdd77301a70df08b40ed71b11a7dc44ec6bf09beb86cb09e364bacd148f037"
+    },
+    {
       "path": "street-greetings.js",
       "bytes": 3862,
       "sha256": "ccd96ff8b8858b7d8e0ca2e0cfc34e5d93ece2f7c1fd8b090b635655c3ef54c6"
@@ -1159,8 +1164,8 @@
     },
     {
       "path": "world.js",
-      "bytes": 69011,
-      "sha256": "e54b2780f18c280a9c4cf8cfe820d53b6c85e3b976011f1e382bdff3cb7b0dfd"
+      "bytes": 69003,
+      "sha256": "208f980d9a7e4f9e6df4325917813cd639dcfe4409ebe38cdd487170f83e66c7"
     },
     {
       "path": "yu.js",
