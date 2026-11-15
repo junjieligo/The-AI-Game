@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "release": "6d26bc3e02c7a733a0c7417fc9c6d270b3203995a071fc8901de9ca10b0ef963",
+  "release": "f1982a4804b1079e1cb9e476cf623274832a62a35b234006217014b4e8e049de",
   "files": [
     {
       "path": "activities.css",
@@ -15,7 +15,7 @@
     {
       "path": "app.js",
       "bytes": 58618,
-      "sha256": "00012055229d7e9be1022d0c6be36e1a1e6fad38a6f3a8fe1cb8a7d6e2846aaf"
+      "sha256": "b177dbcba143f081a55ee24d505d5ae535c2b3bd6a1e02c4b2cb9f871c6e11be"
     },
     {
       "path": "arrival-markers.js",
@@ -920,12 +920,12 @@
     {
       "path": "index.html",
       "bytes": 8977,
-      "sha256": "33b217c3c8cf3b65e9343cbd4fedb8b0bb15e92053dfb79c531663c157919708"
+      "sha256": "228db5b7f2238e24267af84fcc8c29e67e73273324051516b78245de174e380f"
     },
     {
       "path": "landscape-ground.js",
-      "bytes": 3081,
-      "sha256": "3c50a6ed75319cc6a8f76067ff2d0cbb885a4cd2b5cf4fd9173f07e57f9fca0c"
+      "bytes": 4148,
+      "sha256": "b62accb051f73976a63cc91e1112b13569188cbf60171d1cc0335054f7b48a84"
     },
     {
       "path": "lantern-intro-audio.js",
@@ -1164,8 +1164,8 @@
     },
     {
       "path": "world.js",
-      "bytes": 69003,
-      "sha256": "208f980d9a7e4f9e6df4325917813cd639dcfe4409ebe38cdd487170f83e66c7"
+      "bytes": 69208,
+      "sha256": "a4366bd7c2ecfd7f14a2e57c6383bb6d04f783a62ed75c43b81e2ae3e4fe0cbc"
     },
     {
       "path": "yu.js",

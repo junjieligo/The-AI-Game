@@ -11,7 +11,7 @@ import { createStairFootingController } from "./stair-footing.js?v=1.48";
 import { createRoundedSlabGeometry, RETAINING_WALLS, createRetainingWallCourses } from "./terrace-surfaces.js?v=1.14";
 import { PROMENADE_LANTERN_POSTS } from "./scenery-layout.js?v=1.15";
 import { MOUNTAINS, createMountainGeometry } from "./mountains.js?v=1.48";
-import { LANDSCAPE_GROUND, createRiverGeometry } from "./landscape-ground.js?v=1.48";
+import { LANDSCAPE_GROUND, createRiverGeometry, isPointInRiver } from "./landscape-ground.js?v=1.49";
 
 import {
   NODES,
@@ -505,10 +505,10 @@ export function createWorld(
     canvas.dataset.daylight = light.daylight.toFixed(4);
   }
   // Jade river, carved sandstone terraces, and the layered mountain city.
-  // A broad Jialing-inspired river is clearly in front of the stilt-house banks.
+  // The river curves around the front and sides, meeting the two side mountain feet.
   // It remains scenery: water and mountains never become walkable surfaces.
   const river = new THREE.Mesh(createRiverGeometry(), material(LANDSCAPE_GROUND.riverColour));
-  river.name = "foreground-river";
+  river.name = "city-river";
   river.receiveShadow = true;
   root.add(river);
   const addRetainingWall = ({ id, slab }) => {
@@ -1377,8 +1377,13 @@ export function createWorld(
   // The river's graphic ripples are geometry, not a background image.
   const ripples = [];
   for (let i = 0; i < 52; i++) {
-    const x = -13.7 + ((i * 7.91) % 27.4),
+    let x = -13.7 + ((i * 7.91) % 27.4),
       z = 7.1 + ((i * 3.71) % 8.2);
+    // Keep the existing ripple count; edge ripples move into the side reaches.
+    if (!isPointInRiver(x, z, 0.55)) {
+      x = i % 2 ? 14.1 : -14.5;
+      z = -1.7 + ((i * 1.9) % 7.2);
+    }
     const m = box(
       root,
       0.25 + (i % 4) * 0.23,
