@@ -1,0 +1,88 @@
+name: Sync published game
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/sync-game.yml', 'sync/**']
+
+concurrency:
+  group: game-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    outputs:
+      deploy: ${{ steps.decision.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test the updater
+        run: python3 -m unittest discover -s sync -p 'test_*.py'
+      - name: Download and verify the published game
+        id: sync
+        run: python3 sync/mirror.py --repo . --source https://trip-to-the-east-yu-adventure.junjieligo.chatgpt.site
+      - name: Keep a version history
+        run: |
+          date -u +%Y-%m > .sync-heartbeat
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Sync published ChatGPT game'
+            git push origin HEAD:main
+          fi
+      - name: Check whether Pages needs updating
+        id: decision
+        env:
+          RELEASE: ${{ steps.sync.outputs.release }}
+          CHANGED: ${{ steps.sync.outputs.changed }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, time
+          deploy = True
+          if os.environ['CHANGED'] != 'true':
+              try:
+                  url = 'https://junjieligo.github.io/The-AI-Game/mirror-manifest.json?check=' + str(int(time.time()))
+                  with urllib.request.urlopen(url, timeout=20) as r:
+                      live = json.loads(r.read(1000000))
+                  deploy = live.get('release') != os.environ['RELEASE']
+              except Exception:
+                  pass
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('deploy=' + str(deploy).lower() + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('Verified published game: `' + os.environ['RELEASE'][:12] + '`\n\n')
+              f.write('Deploying an update.' if deploy else 'GitHub Pages already matches the published game.')
+          PY
+      - name: Upload verified game
+        if: steps.decision.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .pages-stage
+
+  deploy:
+    if: needs.mirror.outputs.deploy == 'true'
+    needs: mirror
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Publish verified game
+        id: deployment
+        uses: actions/deploy-pages@v4
