@@ -23,6 +23,7 @@ from dataclasses import dataclass
 
 DEFAULT_SOURCE = "https://trip-to-the-east-yu-adventure.junjieligo.chatgpt.site"
 MANIFEST_NAME = "mirror-manifest.json"
+INDEX_TRANSPORT_NAME = "mirror-index.txt"
 STATE_NAME = ".sync-state.json"
 STAGE_NAME = ".pages-stage"
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
@@ -32,7 +33,7 @@ MAX_FILES = 5000
 CHUNK_BYTES = 64 * 1024
 SAFE_DIRECTORIES = {"audio", "fonts", "vendor", "images", "assets", "video", "models", "textures", "data"}
 SAFE_EXTENSIONS = {".html", ".js", ".css", ".json", ".wasm", ".wav", ".mp3", ".m4a", ".ogg", ".flac", ".mp4", ".webm", ".woff", ".woff2", ".ttf", ".otf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg", ".ico", ".gltf", ".glb", ".bin", ".txt", ".md"}
-RESERVED_NAMES = {"readme.md", "source_snapshot.json", "package.json", "package-lock.json", "manifest.json", MANIFEST_NAME}
+RESERVED_NAMES = {"readme.md", "source_snapshot.json", "package.json", "package-lock.json", "manifest.json", MANIFEST_NAME, INDEX_TRANSPORT_NAME}
 HEX_DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 SAFE_PATH = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\Z")
 
@@ -215,7 +216,11 @@ class Downloader:
 
     def fetch(self, path, *, limit, expected=None, destination=None, release=None):
         query = urllib.parse.urlencode({"mirror": release or uuid.uuid4().hex})
-        url = self.source + "/" + path + "?" + query
+        # Sites redirects and augments HTML pages. The publisher exposes the
+        # original index bytes as plain text so the source hash still verifies.
+        # This fixed transport alias is never included in the Pages artifact.
+        public_path = INDEX_TRANSPORT_NAME if path == "index.html" else path
+        url = self.source + "/" + public_path + "?" + query
         request = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (compatible; TripToTheEastMirror/1.0)",
             "Cache-Control": "no-cache", "Accept-Encoding": "identity",
@@ -255,7 +260,7 @@ class Downloader:
                     return b"".join(chunks) if destination is None else None
             except urllib.error.HTTPError as exc:
                 if exc.code not in {408, 429, 500, 502, 503, 504} or attempt == 2:
-                    raise MirrorError(f"Source returned HTTP {exc.code}; mirror retained") from exc
+                    raise MirrorError(f"Source returned HTTP {exc.code} for {path}; mirror retained") from exc
             except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as exc:
                 if attempt == 2:
                     raise MirrorError("Source transfer failed after three attempts") from exc

@@ -44,6 +44,7 @@ class FakeOrigin:
         self.errors = {}
         self.responses = {}
         self.requests = []
+        self.urls = []
 
     def open(self, request, timeout):
         url = urllib.parse.urlsplit(request.full_url)
@@ -51,7 +52,10 @@ class FakeOrigin:
             raise AssertionError("Request escaped the configured HTTPS origin")
         if timeout != 30:
             raise AssertionError("Network timeout is missing")
+        self.urls.append(request.full_url)
         path = url.path.lstrip("/")
+        if path == mirror.INDEX_TRANSPORT_NAME:
+            path = "index.html"
         self.requests.append(path)
         if path in self.errors:
             error = self.errors[path]
@@ -126,6 +130,11 @@ class MirrorTests(unittest.TestCase):
         self.assertFalse((self.repo / mirror.STAGE_NAME / "sync").exists())
         self.assertFalse((self.repo / mirror.STAGE_NAME / mirror.STATE_NAME).exists())
         self.assertEqual((self.repo / "README.md").read_bytes(), b"Repository documentation stays here.")
+        requested_paths = [urllib.parse.urlsplit(url).path for url in self.origin.urls]
+        self.assertIn("/" + mirror.INDEX_TRANSPORT_NAME, requested_paths)
+        self.assertNotIn("/index.html", requested_paths)
+        self.assertNotIn("/", requested_paths)
+        self.assertFalse((self.repo / mirror.STAGE_NAME / mirror.INDEX_TRANSPORT_NAME).exists())
 
     def test_unchanged_release_uses_verified_cache_and_rebuilds_artifact(self):
         self.run_mirror()
@@ -251,7 +260,7 @@ class MirrorTests(unittest.TestCase):
     def test_unsafe_manifest_paths_cannot_modify_repository_controls(self):
         paths = ["../outside.js", "/app.js", "audio/../app.js", "audio/%2e%2e/app.js", "audio\\app.js",
                  ".github/workflows/pwn.yml", "sync/mirror.py", "README.md", "readme.md", "SOURCE_SNAPSHOT.json",
-                 "package.json", ".sync-state.json", "audio/.git/config.js", "https://attacker.example/app.js"]
+                 "package.json", "mirror-index.txt", ".sync-state.json", "audio/.git/config.js", "https://attacker.example/app.js"]
         for path in paths:
             with self.subTest(path=path):
                 origin = FakeOrigin(dict(self.files, **{path: b"untrusted"}))
