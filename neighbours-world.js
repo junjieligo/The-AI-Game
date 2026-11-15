@@ -1,5 +1,6 @@
 import * as THREE from "./vendor/three.module.js";
 import { isWalkable, isWalkableSegment, distance } from "./navigation.js?v=1.16";
+import { createResidentGreetingGate } from "./resident-greeting-proximity.js?v=1.42";
 
 // Six neighbours use short, verified routes on broad terraces. They are never
 // added to player collision geometry; the traveller always has right of way.
@@ -179,7 +180,7 @@ export function createResidentModel(definition) {
   return model;
 }
 
-export function createNeighbourhood({ root, host, onResident, structures = [] }) {
+export function createNeighbourhood({ root, host, onResident, onResidentGreeting = () => false, structures = [] }) {
   const group = new THREE.Group(); group.name = "hongyadong-neighbours"; root.add(group);
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const overlay = document.createElement("div"); overlay.className = "resident-labels";
@@ -211,8 +212,10 @@ export function createNeighbourhood({ root, host, onResident, structures = [] })
     return { definition, model, motion, button, nearby: false, lastOcclusion: -1, occluded: false };
   });
   let completed = new Set(), destroyed = false, clock = 0, waitingResident = null;
+  const greetingGate = createResidentGreetingGate({ onGreeting: onResidentGreeting, isReachable: isWalkableSegment });
+  const namedResidents = records.filter(record => record.button);
   return {
-    update(dt, elapsed, player, { paused = false } = {}) {
+    update(dt, elapsed, player, { paused = false, playerMoving, now = elapsed } = {}) {
       if (destroyed) return;
       clock = elapsed;
       for (const record of records) {
@@ -227,7 +230,11 @@ export function createNeighbourhood({ root, host, onResident, structures = [] })
         }
         record.model.userData.animate({ elapsed, ...state, nearby: record.nearby, reducedMotion: reducedMotion || paused });
       }
+      greetingGate.update({ now, player, moving: playerMoving, paused,
+        residents: namedResidents.map(record => ({ id: record.definition.id, position: record.model.position })),
+      });
     },
+    suspendGreetings() { greetingGate.suspend(); },
     layout(camera, width, height, hidden = false) {
       if (destroyed) return;
       for (const record of records) {

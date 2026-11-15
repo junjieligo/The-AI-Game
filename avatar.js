@@ -39,7 +39,7 @@ export const AVATAR_PRESETS = Object.freeze({
     outfit: "terracotta",
     hair: "short",
     skin: "warm",
-    hat: false,
+    hat: true,
   }),
   xiaolin: Object.freeze({
     zh: "小李",
@@ -48,18 +48,18 @@ export const AVATAR_PRESETS = Object.freeze({
     description: "Tall silhouette · round glasses",
     outfit: "jade",
     hair: "bob",
-    skin: "light",
-    hat: false,
+    skin: "deep",
+    hat: true,
   }),
   lele: Object.freeze({
     zh: "小白",
     py: "Xiǎobái",
     en: "Xiao Bai",
-    description: "Round cheeks · bright smile",
+    description: "Soft features · bright smile",
     outfit: "plum",
     hair: "bun",
-    skin: "deep",
-    hat: false,
+    skin: "light",
+    hat: true,
   }),
 });
 const anatomy = {
@@ -327,10 +327,10 @@ export function createAvatarModel(profile = {}) {
   // A large, friendly face. Details are actual 3D shapes rather than a photo.
   cylinder(head, 0, 2.06, 0, 0.18, 0.18, 0.23, skin);
   sphere(head, 0, 2.57, 0, 0.58, 0.64, 0.51, skin);
-  const eyes = [];
+  const eyes = [], ears = [];
   for (const sign of [-1, 1]) {
-    sphere(head, sign * 0.57, 2.55, -0.015, 0.095, 0.15, 0.09, skin);
-    sphere(head, sign * 0.605, 2.55, 0.045, 0.04, 0.075, 0.018, blush);
+    ears.push(sphere(head, sign * 0.57, 2.55, -0.015, 0.095, 0.15, 0.09, skin));
+    ears.push(sphere(head, sign * 0.605, 2.55, 0.045, 0.04, 0.075, 0.018, blush));
     const eyeGroup = new THREE.Group();
     eyeGroup.position.set(sign * 0.19, 2.61, 0.458);
     head.add(eyeGroup);
@@ -419,13 +419,7 @@ export function createAvatarModel(profile = {}) {
     0.015,
     strap,
   );
-  const cheeks = new THREE.Group();
-  cheeks.name = "round-cheeks";
-  head.add(cheeks);
-  for (const sign of [-1, 1]) {
-    sphere(cheeks, sign * 0.32, 2.39, 0.35, 0.18, 0.15, 0.13, skin);
-    sphere(cheeks, sign * 0.34, 2.42, 0.476, 0.075, 0.043, 0.013, blush);
-  }
+  // Keep the original face shape and shallow blush, without added cheek bumps.
   // Three original hairstyles. Back volumes leave the face clear.
   const hairstyles = {};
   for (const name of ["short", "bob", "bun"]) {
@@ -460,10 +454,10 @@ export function createAvatarModel(profile = {}) {
     });
     if (name === "bob") {
       for (const sign of [-1, 1]) {
-        sphere(g, sign * 0.48, 2.54, -0.025, 0.19, 0.48, 0.4, dark);
-        sphere(g, sign * 0.45, 2.28, 0.03, 0.18, 0.2, 0.27, dark);
+        sphere(g, sign * 0.48, 2.57, -0.045, 0.16, 0.42, 0.36, dark);
+        sphere(g, sign * 0.46, 2.31, 0.005, 0.155, 0.17, 0.25, dark);
       }
-      sphere(g, 0, 2.53, -0.32, 0.53, 0.47, 0.29, dark);
+      sphere(g, 0, 2.55, -0.32, 0.52, 0.43, 0.28, dark);
       roundedBox(g, 0.45, 2.81, 0.33, 0.075, 0.035, 0.035, 0.01, gold);
     } else if (name === "bun") {
       sphere(g, 0, 3.25, -0.15, 0.26, 0.25, 0.25, dark);
@@ -538,6 +532,7 @@ export function createAvatarModel(profile = {}) {
       ...next,
       character: id,
     };
+    value.hat = typeof next.hat === "boolean" ? next.hat : wearsHat;
     const shape = anatomy[id];
     body.scale.set(...shape.body);
     head.scale.set(...shape.head);
@@ -548,7 +543,6 @@ export function createAvatarModel(profile = {}) {
     });
     freckles.visible = id === "xiaoan";
     glasses.visible = id === "xiaolin";
-    cheeks.visible = id === "lele";
     const p = palettes[value.outfit] || palettes.terracotta;
     coat.color.set(p.coat);
     trim.color.set(p.trim);
@@ -556,10 +550,11 @@ export function createAvatarModel(profile = {}) {
     stitch.color.set(p.stitch);
     strap.color.set(p.strap);
     skin.color.set(skins[value.skin] || skins.warm);
-    Object.entries(hairstyles).forEach(
-      ([key, g]) =>
-        (g.visible = key === (value.hair in hairstyles ? value.hair : "short")),
-    );
+    const selectedHair = value.hair in hairstyles ? value.hair : "short";
+    Object.entries(hairstyles).forEach(([key, g]) => (g.visible = key === selectedHair));
+    // The bob covers the ears. Hide the covered geometry so the skin and
+    // inner-ear patches cannot poke through its original rounded silhouette.
+    ears.forEach((ear) => (ear.visible = selectedHair !== "bob"));
     hat.visible = Boolean(value.hat);
     // The bun tucks under a hat rather than visibly intersecting it.
     if (value.hat && value.hair === "bun") {

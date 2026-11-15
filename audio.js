@@ -4,6 +4,7 @@ import { ORDER_RECORDINGS } from "./order-recordings.js?v=1.7";
 import { RECORDED_CLIPS } from "./recordings.js?v=1.7";
 import { NAME_RECORDINGS, RETIRED_NAME_KEYS } from "./name-recordings.js?v=1.7";
 import { NEIGHBOUR_RECORDINGS, NEIGHBOUR_VOICE_PROFILES } from "./neighbour-recordings.js?v=1.41";
+import { GREETING_RECORDINGS } from "./greeting-recordings.js?v=1.42";
 
 // Retain existing human performances. Current Yu performances and previously
 // uncovered authored cues come from the local batch; custom names use fallback.
@@ -19,6 +20,7 @@ export const AUDIO_CLIPS = {
   "traveller|十二元": RECORDED_CLIPS["narrator|十二元"],
   ...VOXCPM_RECORDINGS,
   ...NEIGHBOUR_RECORDINGS,
+  ...GREETING_RECORDINGS,
 };
 
 export const VOICE_PROFILES = Object.freeze({
@@ -409,6 +411,7 @@ export function createVoicePlayer({
       ),
       mandarinVoiceCount: mandarinVoices(availableVoices()).length,
       speaking,
+      pending: !speaking && Boolean(currentAudio || currentUtterance || cancelVoiceWait),
       activeRole,
       voiceName,
       voiceLanguage,

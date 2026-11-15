@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "release": "d5fe8cc453dcb9b9dab3a6c0792481736236d63964028f387bcb020906ffc004",
+  "release": "5b95f6062ad1ae95d305f839ca2a3b6ec182f929a0eb30896e73c33d05ee8809",
   "files": [
     {
       "path": "activities.css",
@@ -14,8 +14,8 @@
     },
     {
       "path": "app.js",
-      "bytes": 55841,
-      "sha256": "03a20b8f311225dbca6e241b81e62236982f6b5a4d15938547661311e0338397"
+      "bytes": 58618,
+      "sha256": "ac4005c8279cbf7387a4ccde5066e77b1e225a6f5dc88e49169e6026ec9242ed"
     },
     {
       "path": "arrival-markers.js",
@@ -49,8 +49,8 @@
     },
     {
       "path": "audio.js",
-      "bytes": 13800,
-      "sha256": "134f3aa502e3088fd1f741a18fb0e0f4f54d8ffc2d7f4c3ab37c2ae72ec8e3d1"
+      "bytes": 13987,
+      "sha256": "4588294a0d491f4237eb824f6ddd14cdf6a32108c42867532070d1c7fb716bf0"
     },
     {
       "path": "audio/arrival-in-chongqing.wav",
@@ -341,6 +341,26 @@
       "path": "audio/voice/npc-grandma-e1ccd41896.wav",
       "bytes": 182444,
       "sha256": "7e8a99488a19846b664cfd1a5206f1bd2456e122ee95530339aef65230e85d86"
+    },
+    {
+      "path": "audio/voice/npc-greeting-alan.wav",
+      "bytes": 259244,
+      "sha256": "359e287ca6d4806b8e4bf698b178ac87a0d101075ce68635a56e328f2dad9c02"
+    },
+    {
+      "path": "audio/voice/npc-greeting-grandma.wav",
+      "bytes": 197804,
+      "sha256": "1271d27aedf2d7879f510224a211d311337b4d4ec4cd1c7073b357c920f23348"
+    },
+    {
+      "path": "audio/voice/npc-greeting-lee.wav",
+      "bytes": 243884,
+      "sha256": "b9d32c7ad1920d440dc8a17beab89c69e58eeeaf66a160ca1ad6307504aa0010"
+    },
+    {
+      "path": "audio/voice/npc-greeting-xiaohe.wav",
+      "bytes": 243884,
+      "sha256": "4c2cea95c077e6220c203e1ad6f20c62849afd1951ba6704e57eb25e1c4adbf2"
     },
     {
       "path": "audio/voice/npc-lee-1134557959.wav",
@@ -754,8 +774,8 @@
     },
     {
       "path": "avatar.js",
-      "bytes": 20983,
-      "sha256": "17bdfde6ea6644c3f151b9fe4a1e21a8e9362522dbc63894b8cb6208e1fa875f"
+      "bytes": 21099,
+      "sha256": "4a62eed5c918e12453190877a85bce9f855fbc328eb37cc78a5357f4669f4b4a"
     },
     {
       "path": "challenge-help.js",
@@ -863,6 +883,16 @@
       "sha256": "d66808d4d35d2793664a56543cdb0ab78f76f2338515300bb4dc8ad07b8138ea"
     },
     {
+      "path": "greeting-lines.js",
+      "bytes": 575,
+      "sha256": "ac6a9d5d4cb24e8993c2eda1dbd604f67805e850100e5e044934a7d6e8aabbbc"
+    },
+    {
+      "path": "greeting-recordings.js",
+      "bytes": 557,
+      "sha256": "92b2e048c27c58104ec2b622eea6777607ab724f6e34c1c17222d54630b2ed77"
+    },
+    {
       "path": "guide-lines.js",
       "bytes": 2930,
       "sha256": "e0db183fe9b1b89007873663fc2b175e4e9170d3ff0b287a5bfc5338869361e2"
@@ -889,8 +919,13 @@
     },
     {
       "path": "index.html",
-      "bytes": 9160,
-      "sha256": "0421da0ac8c712f452e914311d76665d8bb170181a3d5366d71c12eb8b24e559"
+      "bytes": 8977,
+      "sha256": "7d1b0bef33a7a6b6638b167c552a9a3987b3b1c38c61d9fd4dd614a4738ee9c0"
+    },
+    {
+      "path": "landscape-ground.js",
+      "bytes": 4638,
+      "sha256": "357d86fba9b5e8d8f84455d23392058850a810b473804780a660bdd583016adc"
     },
     {
       "path": "lantern-intro-audio.js",
@@ -964,8 +999,8 @@
     },
     {
       "path": "neighbours-world.js",
-      "bytes": 18193,
-      "sha256": "268b50f5f1ef5775ff3c496873c30a8b6ba711b5fb64071f6510306eb1319369"
+      "bytes": 18774,
+      "sha256": "55fee9efd6bea14c84fd486fc7ff02fe6b2e0382b5dfe75fdcbe90b9640abcd0"
     },
     {
       "path": "neighbours.css",
@@ -974,8 +1009,8 @@
     },
     {
       "path": "neighbours.js",
-      "bytes": 12502,
-      "sha256": "7f717b52408eac8279f2da5ea18afeac5e2332b7224bf69642b9cf379ea452c0"
+      "bytes": 12367,
+      "sha256": "1810e17e55b55ae2c64a7cd6a3bb1399d868215584003e80e4d669fb2f96eac2"
     },
     {
       "path": "occlusion.js",
@@ -1008,6 +1043,11 @@
       "sha256": "ba44a1763f9b7843f49f56f932e3b542bf0ff2c9c68692a82bb477db674c7998"
     },
     {
+      "path": "resident-greeting-proximity.js",
+      "bytes": 3129,
+      "sha256": "d81c1c42d1b807568863fce0603862a293ece544495a398d9e51f5824e94c931"
+    },
+    {
       "path": "scenery-layout.js",
       "bytes": 500,
       "sha256": "ed469dbc86c543bd4aff79da44aa21209762537a930eafa7adbad2e4b80ea0ec"
@@ -1026,6 +1066,11 @@
       "path": "speaking-practice.js",
       "bytes": 15249,
       "sha256": "62bbff15105d720ec423d5e207f36cf4b6d9becc3d4c11c2b64dbf1fb3636cd1"
+    },
+    {
+      "path": "street-greetings.js",
+      "bytes": 3862,
+      "sha256": "ccd96ff8b8858b7d8e0ca2e0cfc34e5d93ece2f7c1fd8b090b635655c3ef54c6"
     },
     {
       "path": "style.css",
@@ -1114,8 +1159,8 @@
     },
     {
       "path": "world.js",
-      "bytes": 68088,
-      "sha256": "1ba7cba99962d69e3e36bdcb10e97d491467cd9a67a377e41b45fbdf9fb86a21"
+      "bytes": 69011,
+      "sha256": "e54b2780f18c280a9c4cf8cfe820d53b6c85e3b976011f1e382bdff3cb7b0dfd"
     },
     {
       "path": "yu.js",

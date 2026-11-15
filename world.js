@@ -1,7 +1,7 @@
 import { getGameTimeState } from "./game-time.js?v=1.7";
 import * as THREE from "./vendor/three.module.js";
-import { createAvatarModel } from "./avatar.js?v=1.7";
-import { createNeighbourhood } from "./neighbours-world.js?v=1.41";
+import { createAvatarModel } from "./avatar.js?v=1.47";
+import { createNeighbourhood } from "./neighbours-world.js?v=1.42";
 import { planResidentApproach } from "./resident-approach.js?v=1.41";
 import { createYuModel, createYuHeadroomController } from "./yu.js?v=1.16";
 import { createTrailFollower } from "./follower.js?v=1.16";
@@ -10,6 +10,7 @@ import { createWalkwayPaving, STAIRCASES } from "./walkway-surfaces.js?v=1.16";
 import { createRoundedSlabGeometry, RETAINING_WALLS, createRetainingWallCourses } from "./terrace-surfaces.js?v=1.14";
 import { PROMENADE_LANTERN_POSTS } from "./scenery-layout.js?v=1.15";
 import { MOUNTAINS, createMountainGeometry } from "./mountains.js?v=1.38";
+import { LANDSCAPE_GROUND, createLandscapeGroundGeometry, createRiverGeometry } from "./landscape-ground.js?v=1.46";
 
 import {
   NODES,
@@ -33,6 +34,7 @@ export function createWorld(
     onReady = () => {},
     onTravel = () => {},
     onResident = () => {},
+    onResidentGreeting = () => false,
     timeState = getGameTimeState,
   } = {},
 ) {
@@ -467,7 +469,7 @@ export function createWorld(
     syncSkySurface();
     // Readability floors keep roofs, characters and pale lanes visible at midnight.
     // Daytime endpoints are unchanged; all transitions remain continuous.
-    skyLight.intensity = 1.45 + light.daylight * 1.25;
+    skyLight.intensity = 1.46 + light.daylight * 1.25;
     skyLight.color.copy(nightSkyFill).lerp(daySkyFill, light.daylight);
     skyLight.groundColor
       .copy(nightGroundFill)
@@ -504,7 +506,17 @@ export function createWorld(
   // Jade river, carved sandstone terraces, and the layered mountain city.
   // A broad Jialing-inspired river is clearly in front of the stilt-house banks.
   // It remains scenery: water and mountains never become walkable surfaces.
-  roundedSlab(32, 27, 0.5, 2.4, 0, -1.85, 3.1, "#8ebeb3");
+  const river = new THREE.Mesh(createRiverGeometry(), material(LANDSCAPE_GROUND.riverColour));
+  river.name = "foreground-river";
+  river.receiveShadow = true;
+  root.add(river);
+  // Continuous dry ground joins the mountain feet to the city. Only its
+  // foreground edge meets the river: Hongyadong sits against the hillside.
+  const bank = new THREE.Mesh(createLandscapeGroundGeometry(), material(LANDSCAPE_GROUND.bankColour));
+  bank.name = "mountain-mainland";
+  bank.receiveShadow = true;
+  bank.castShadow = true;
+  root.add(bank);
   const addRetainingWall = ({ id, slab }) => {
     const { width, depth, height, radius, x, y, z } = slab;
     const mesh = roundedSlab(width, depth, height, radius, x, y, z, C.cliff);
@@ -1273,7 +1285,7 @@ export function createWorld(
     [9, -8.5],
   ]) {
     ball(root, p[0], 3, p[1], 1.1, 2.4, 1.1, "#9cae9c");
-    ball(root, p[0] + 0.3, 2.1, p[1] + 0.8, 0.9, 1.45, 0.95, "#b3bc9e");
+    ball(root, p[0] + 0.3, 2.1, p[1] + 0.8, 0.9, 1.46, 0.95, "#b3bc9e");
   }
   // Three equally spaced posts along the railing; the shared collision plan
   // leaves the complete promenade and both stair approaches unobstructed.
@@ -1367,7 +1379,7 @@ export function createWorld(
   }
   boat(-7.6, 8.8, -0.23, true);
   boat(1.8, 9.15, 0.25, false);
-  boat(12.5, -2.8, -0.95, true).scale.setScalar(0.72);
+  boat(10.7, 11.5, -0.65, true).scale.setScalar(0.72);
   // The river's graphic ripples are geometry, not a background image.
   const ripples = [];
   for (let i = 0; i < 52; i++) {
@@ -1392,9 +1404,9 @@ export function createWorld(
       0.55,
       0.013,
       0.028,
-      12.5 + (i % 3) * 0.65,
+      9.8 + (i % 3) * 0.65,
       -1.18,
-      -6 + i * 0.85,
+      9.5 + i * 0.44,
       "#c9e1ce",
       false,
     );
@@ -1419,6 +1431,7 @@ export function createWorld(
   const neighbours = createNeighbourhood({
     root, host, structures: occludingStructures,
     onResident(id) { stopWalking(); onResident(id); },
+    onResidentGreeting,
   });
   const occlusion = createOcclusionController({
     camera,
@@ -1817,7 +1830,10 @@ export function createWorld(
     raf = requestAnimationFrame(animate);
     const frameDelta = clock.getDelta();
     // Cinematic introductions own their renderer; pause the hidden map to save GPU time.
-    if (document.body.classList.contains("arriving") || document.body.classList.contains("in-hotpot-intro")) return;
+    if (document.body.classList.contains("arriving") || document.body.classList.contains("in-hotpot-intro")) {
+      neighbours.suspendGreetings();
+      return;
+    }
     const dt = Math.min(frameDelta, 0.05);
     // Route distance uses actual frame time, so low-FPS devices do not walk in slow motion.
     // Large interruptions are capped; route segments still consume every corner in order.
@@ -1935,8 +1951,13 @@ export function createWorld(
           (0.25 + (i % 4) * 0.23) * (1 + Math.sin(elapsed * 0.6 + i) * 0.15);
       });
     }
-    const neighboursPaused = Boolean(document.querySelector("#modal-root .modal-backdrop"));
-    neighbours.update(dt, elapsed, player.position, { paused: neighboursPaused });
+    const neighboursPaused = document.hidden || document.body.classList.contains("creating") ||
+      Boolean(document.querySelector('[role="dialog"][aria-modal="true"], #modal-root .modal-backdrop'));
+    neighbours.update(dt, elapsed, player.position, {
+      paused: neighboursPaused,
+      playerMoving: difference.lengthSq() > .00000001,
+      now: performance.now() / 1000,
+    });
     yuHeadroom.update(routeDelta);
     // Refresh camera/model matrices before projection and exact occlusion rays.
     // This presentation step never touches movement, routes, or collisions.

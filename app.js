@@ -14,7 +14,7 @@ import {
   marketResumeStep,
 } from "./market.js?v=1.7";
 import { withSpeakingPractice } from "./practice-content.js?v=1.7";
-import { createNeighbourEncounters } from "./neighbours.js?v=1.41";
+import { createNeighbourEncounters } from "./neighbours.js?v=1.46";
 import { RESIDENTS, TRAIL_RESIDENTS, VOCAB_INTROS } from "./neighbours-content.js?v=1.41";
 import { residentPortrait } from "./neighbours-art.js?v=1.39";
 import {
@@ -25,14 +25,16 @@ import {
 } from "./orders.js?v=1.7";
 import { getGuideLine } from "./guide-lines.js?v=1.7";
 import { getGameTimeState } from "./game-time.js?v=1.7";
-import { createWorld } from "./world.js?v=1.41";
+import { createWorld } from "./world.js?v=1.47";
 import {
   LESSONS as BASE_LESSONS,
   PHRASES as BASE_PHRASES,
 } from "./lessons.js?v=1.7";
-import { createAvatarView, AVATAR_PRESETS } from "./avatar.js?v=1.7";
+import { createAvatarView, AVATAR_PRESETS } from "./avatar.js?v=1.47";
 import { YU_PORTRAIT } from "./yu.js?v=1.16";
-import { createVoicePlayer, roleFromSpeaker } from "./audio.js?v=1.41";
+import { createVoicePlayer, roleFromSpeaker } from "./audio.js?v=1.42";
+import { createStreetGreetingPlayer } from "./street-greetings.js?v=1.42";
+import { RESIDENT_GREETING_LINES } from "./greeting-lines.js?v=1.42";
 import { activityScene, setActivityOutcome } from "./activities.js?v=1.26";
 import { createSoundscape } from "./soundscape.js?v=1.26";
 import { createTaskTimer, formatElapsed } from "./task-timer.js?v=1.7";
@@ -194,12 +196,12 @@ function save() {
   if (!storageWorks)
     $(".save-indicator").textContent = "Progress is saved for this visit only";
 }
-function toast(message) {
+function toast(message, duration = 3500) {
   const el = $("#toast");
   el.textContent = message;
   el.classList.add("show");
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.classList.remove("show"), 3500);
+  toast.timer = setTimeout(() => el.classList.remove("show"), duration);
 }
 function nextLesson() {
   return LESSONS.find((l) => !state.completed.includes(l.id)) || LESSONS[0];
@@ -236,9 +238,45 @@ document.addEventListener("pointerover", (e) => {
   const b = e.target.closest("button");
   if (b && !b.contains(e.relatedTarget)) soundscape.effect("hover");
 });
+let manualSpeechPending = 0;
+let greetingCaption = "";
+let pendingResidentMeeting = null;
+const streetGreetings = createStreetGreetingPlayer({
+  canPlay: () => state.sound && !document.hidden && !modalType && !practiceAudioBusy &&
+    !manualSpeechPending && !voicePlayer.getStatus().speaking && !voicePlayer.getStatus().pending &&
+    !document.body.classList.contains("creating") &&
+    !document.querySelector(".arrival-screen, .hotpot-intro"),
+  onState(id, playing) {
+    document.body.dataset.residentSpeaking = playing ? id : "";
+    soundscape.setDucked(playing || manualSpeechPending > 0 || voicePlayer.getStatus().speaking);
+    if (playing) {
+      greetingCaption = `${RESIDENTS[id].zh}：${RESIDENT_GREETING_LINES[id].zh}`;
+      toast(greetingCaption, 6000);
+    } else if ($("#toast").textContent === greetingCaption) {
+      $("#toast").classList.remove("show");
+    }
+    if (!playing && pendingResidentMeeting) {
+      const pending = pendingResidentMeeting;
+      pendingResidentMeeting = null;
+      const position = world?.getTravellerPosition();
+      if (!document.hidden && !modalType && position &&
+          Math.hypot(position.x - pending.position.x, position.y - pending.position.y, position.z - pending.position.z) < .1)
+        neighbourhood.meet(pending.id);
+    }
+  },
+});
+// Retry an interrupted audio context on the next real gesture, not an autoplay
+// timer. Four small WAV buffers are reused for the whole visit.
+for (const event of ["pointerdown", "pointerup", "click", "keydown"])
+  document.addEventListener(event, () => { void streetGreetings.unlock(); }, { capture: true });
+function stopStreetGreetings() {
+  pendingResidentMeeting = null;
+  streetGreetings.stop();
+}
 const voicePlayer = createVoicePlayer({
   onNotice: toast,
   onState: (role, playing) => {
+    if (playing) stopStreetGreetings();
     document.body.dataset.speaking = playing ? role : "";
     world?.setSpeaking?.(playing && role === "yu");
     const guideButton = $("#tip-listen");
@@ -250,7 +288,7 @@ const voicePlayer = createVoicePlayer({
       yuSpeaking ? "Stop Yu" : "Listen to Yu",
     );
     guideButton.title = yuSpeaking ? "Stop Yu" : "Listen to Yu";
-    soundscape.setDucked(playing);
+    soundscape.setDucked(playing || streetGreetings.getStatus().speaking);
     if (modalType === "lesson")
       document
         .querySelectorAll("[data-flow]")
@@ -273,7 +311,9 @@ function speak(text, { role = "narrator", slow = false, manual = false } = {}) {
     updateOverview();
     toast("Pronunciation audio on.");
   }
-  return voicePlayer.play(text, { role, slow });
+  stopStreetGreetings();
+  manualSpeechPending += 1;
+  return voicePlayer.play(text, { role, slow }).finally(() => { manualSpeechPending -= 1; });
 }
 function listenButton(text, role = "narrator", withSlow = false) {
   const normal = `<button class="listen-button" data-speak="${esc(text)}" data-voice-role="${role}" aria-label="Hear ${esc(text)}" title="Listen in Mandarin">${iconMarkup("sound")}</button>`;
@@ -288,6 +328,7 @@ function openModal(content, wide = false, type = "info") {
   clearSpeakingPractice();
   if (!$("#modal-root").children.length) lastFocus = document.activeElement;
   voicePlayer.stop();
+  stopStreetGreetings();
   world?.stopWalking?.();
   modalType = type;
   if (
@@ -321,6 +362,7 @@ function bindAudio() {
   );
 }
 function closeModal() {
+  stopStreetGreetings();
   clearSpeakingPractice();
   pauseTaskTiming();
   $("#modal-root").innerHTML = "";
@@ -929,7 +971,7 @@ $(".brand").onclick = (e) => {
 };
 $("#sound-toggle").onclick = () => {
   state.sound = !state.sound;
-  if (!state.sound) voicePlayer.stop();
+  if (!state.sound) { voicePlayer.stop(); stopStreetGreetings(); }
   save();
   updateOverview();
   toast(
@@ -948,6 +990,7 @@ $("#tip-listen").onclick = () => {
 };
 window.addEventListener("pagehide", () => {
   voicePlayer.stop();
+  stopStreetGreetings();
   speakingPractice?.cancel();
 });
 $("#rotate-left").onclick = () => world?.rotate(-0.3);
@@ -1000,8 +1043,8 @@ function hideLoading() {
 }
 neighbourhood = createNeighbourEncounters({
   openModal, closeModal, listenButton,
-  stopVoice: () => voicePlayer.stop(),
-  setAudioBusy(busy) { practiceAudioBusy = busy; soundscape.setPracticeQuiet(busy); },
+  stopVoice: () => { voicePlayer.stop(); stopStreetGreetings(); },
+  setAudioBusy(busy) { practiceAudioBusy = busy; if (busy) stopStreetGreetings(); soundscape.setPracticeQuiet(busy); },
   getPreferences: () => ({ pinyin: state.pinyin, translations: state.translations }),
   setPreferences(value) { Object.assign(state, value); save(); },
   getCompleted: () => state.completed,
@@ -1010,7 +1053,13 @@ neighbourhood = createNeighbourEncounters({
   onFindResident: (id) => {
     const resident = RESIDENTS[id];
     if (!resident) return;
-    const started = world?.walkToResident?.(id, () => neighbourhood.meet(id));
+    const started = world?.walkToResident?.(id, () => {
+      // Let a neighbour finish the welcome before opening the automatic Find
+      // arrival dialog. A fresh user action can still interrupt immediately.
+      if (streetGreetings.getStatus().speaking)
+        pendingResidentMeeting = { id, position: { ...world.getTravellerPosition() } };
+      else neighbourhood.meet(id);
+    });
     if (!started) toast(`Please move to a clear path and try finding ${resident.en} again.`);
     else if ($("#world").dataset.travelling === "true") {
       // The directory closes back to the quest panel; move keyboard focus to the
@@ -1029,6 +1078,7 @@ try {
   world = createWorld($("#world"), {
     onSelect: openLessonIntro,
     onResident: (id) => neighbourhood.meet(id),
+    onResidentGreeting: (id) => streetGreetings.play(id),
     onTravel: (id) => (unlocked(id) ? startTaskTiming(id) : pauseTaskTiming()),
     onReady: hideLoading,
   });
@@ -1066,7 +1116,7 @@ const DEFAULT_PROFILE = {
   outfit: "terracotta",
   hair: "short",
   skin: "warm",
-  hat: false,
+  hat: true,
 };
 let avatarView;
 function cleanName(value) {
@@ -1212,7 +1262,9 @@ function showCreator() {
         if (key === "name") {
           draft.character = draft.name;
           const preset = AVATAR_PRESETS[draft.name];
-          for (const property of ["outfit", "hair", "skin", "hat"])
+          // A hat is selected initially; changing a preset must respect the
+          // player's decision to take it off (or put it back on).
+          for (const property of ["outfit", "hair", "skin"])
             draft[property] = preset[property];
         }
         refreshCreator();
@@ -1241,6 +1293,7 @@ function showCreator() {
 }
 async function startArrivalTrip() {
   voicePlayer.stop();
+  stopStreetGreetings();
   world?.stopWalking?.();
   pauseTaskTiming();
   await playArrival({
@@ -1288,7 +1341,7 @@ setInterval(() => {
   if (taskTimer.get().running) save();
 }, 1000);
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) taskTimer.pause();
+  if (document.hidden) { taskTimer.pause(); stopStreetGreetings(); }
   else if (timingContext) taskTimer.resume();
   save();
   updateTaskTimers();

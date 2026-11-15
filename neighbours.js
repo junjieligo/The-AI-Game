@@ -84,7 +84,7 @@ export function createNeighbourEncounters({
       const modelVisible = round.stage === 'repeat';
       let ready = false;
       show(`<div class="modal-eyebrow">${street ? 'A FAMILIAR FACE · QUICK RECAP' : `PRACTISE TOGETHER · ${position + 1} / ${rounds.length}`}</div>
-        ${identity(id, street ? 'Good to see you again' : 'A little more Mandarin, together')}
+        ${identity(id, street ? '' : 'A little more Mandarin, together')}
         <h2 id="modal-title">${escape(round.title)}</h2>
         ${street ? '' : timerMarkup(lesson.id)}
         ${street ? '' : `<div class="neighbour-stages" aria-label="Practice stages">${rounds.map((r, i) => `<span class="${i < position ? 'done' : i === position ? 'current' : ''}">${i + 1} · ${stageNames[r.stage]}</span>`).join('')}</div>`}
@@ -153,9 +153,8 @@ export function createNeighbourEncounters({
     const recap = getStreetRecap(id, completed, lessons);
     const trails = Object.entries(TRAIL_RESIDENTS).filter(([, who]) => who === id).map(([trail]) => getLesson(trail)).filter(Boolean);
     show(`<div class="modal-eyebrow">YOUR CHONGQING NEIGHBOURS</div>${identity(id)}
-      <h2 id="modal-title">${completed.length ? 'Good to see you again.' : 'Welcome to our neighbourhood.'}</h2>
+      <h2 id="modal-title">${escape(resident.description)}</h2>
       <div class="neighbour-scene">${neighbourVignette(id, trails[0]?.id === 'cafe' ? 'tea' : trails[0]?.id === 'market' ? 'yuan' : trails[0]?.id === 'gate' ? 'where' : 'hotpot')}</div>
-      <p class="modal-intro">${escape(resident.description)}</p>
       <div class="neighbour-visit-links">${trails.map((lesson) => `<button class="secondary" data-neighbour-trail="${lesson.id}">${escape(lesson.title)} ${iconMarkup('arrow-right')}</button>`).join('')}</div>
       <div class="modal-footer"><button class="secondary" id="neighbour-find">Find ${escape(resident.en)}</button>${recap ? '<button class="primary" id="neighbour-recap">A little recap '+iconMarkup('arrow-right')+'</button>' : '<button class="primary" id="neighbour-goodbye">See you soon '+iconMarkup('check')+'</button>'}</div>`);
     document.querySelectorAll('[data-neighbour-trail]').forEach((b) => b.onclick = () => onBeginTrail(b.dataset.neighbourTrail));
