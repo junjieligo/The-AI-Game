@@ -1,12 +1,15 @@
 import { getGameTimeState } from "./game-time.js?v=1.7";
 import * as THREE from "./vendor/three.module.js";
 import { createAvatarModel } from "./avatar.js?v=1.7";
+import { createNeighbourhood } from "./neighbours-world.js?v=1.41";
+import { planResidentApproach } from "./resident-approach.js?v=1.41";
 import { createYuModel, createYuHeadroomController } from "./yu.js?v=1.16";
 import { createTrailFollower } from "./follower.js?v=1.16";
 import { createOcclusionController } from "./occlusion.js?v=1.14";
 import { createWalkwayPaving, STAIRCASES } from "./walkway-surfaces.js?v=1.16";
 import { createRoundedSlabGeometry, RETAINING_WALLS, createRetainingWallCourses } from "./terrace-surfaces.js?v=1.14";
 import { PROMENADE_LANTERN_POSTS } from "./scenery-layout.js?v=1.15";
+import { MOUNTAINS, createMountainGeometry } from "./mountains.js?v=1.38";
 
 import {
   NODES,
@@ -29,6 +32,7 @@ export function createWorld(
     onSelect = () => {},
     onReady = () => {},
     onTravel = () => {},
+    onResident = () => {},
     timeState = getGameTimeState,
   } = {},
 ) {
@@ -74,6 +78,10 @@ export function createWorld(
       setActive() {},
       setAppearance() {},
       setSpeaking() {},
+      setNeighbourProgress() {},
+      getNeighbourState() { return []; },
+      focusResident() { return false; },
+      walkToResident() { return false; },
       rotate() {},
       zoom() {},
       resetView() {},
@@ -508,63 +516,25 @@ export function createWorld(
   roundedSlab(19.4, 10.2, 0.24, 0.5, -1, 2.06, -4.3, C.stoneLight);
   roundedSlab(13.9, 5.5, 2.15, 0.35, -1.2, 2.25, -6.5, C.cliff);
   roundedSlab(14.1, 5.6, 0.22, 0.35, -1.2, 4.4, -6.5, C.stoneLight);
-  // Low-poly layered hills anchor the neighbourhood against the mountain side.
-  // Rear peaks are taller, while low near shoulders leave the roofline readable.
+  // Six individual low-poly silhouettes frame the town. The lower outer peaks
+  // are separated from the rear four so they read as mountains, not hidden shoulders.
   const mountainGroup = new THREE.Group();
   mountainGroup.name = "northern-mountains";
   root.add(mountainGroup);
-  function mountain(x, z, width, depth, height, colour, twist = 0) {
-    const radial = 8;
-    const levels = [0, 0.22, 0.55, 0.82];
-    const radii = [1, 0.9, 0.62, 0.3];
-    const vertices = [],
-      indices = [];
-    for (let row = 0; row < levels.length; row++) {
-      for (let i = 0; i < radial; i++) {
-        const a = (i / radial) * Math.PI * 2 + twist;
-        const ripple = 1 + Math.sin(i * 2.3 + row * 1.8) * 0.09;
-        vertices.push(
-          Math.cos(a) * width * radii[row] * ripple + row * width * 0.045,
-          levels[row] * height,
-          Math.sin(a) * depth * radii[row] * ripple,
-        );
-      }
-    }
-    vertices.push(width * 0.17, height, -depth * 0.08);
-    for (let row = 0; row < levels.length - 1; row++) {
-      for (let i = 0; i < radial; i++) {
-        const a = row * radial + i,
-          b = row * radial + ((i + 1) % radial);
-        indices.push(a, a + radial, b, b, a + radial, b + radial);
-      }
-    }
-    for (let i = 0; i < radial; i++)
-      indices.push(24 + i, 32, 24 + ((i + 1) % radial));
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(vertices, 3),
-    );
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
+  for (const profile of MOUNTAINS) {
     const peak = new THREE.Mesh(
-      geometry,
-      material(colour, {
+      createMountainGeometry(profile),
+      material(profile.colour, {
         flatShading: true,
         side: THREE.DoubleSide,
       }),
     );
-    peak.position.set(x, -1.65, z);
+    peak.name = `mountain-${profile.id}`;
+    peak.position.set(profile.x, -1.65, profile.z);
     peak.receiveShadow = true;
     peak.castShadow = false;
     mountainGroup.add(peak);
   }
-  mountain(-11.7, -13.8, 4.3, 3.5, 7.3, "#8da99e", 0.15);
-  mountain(-5.2, -15.3, 4.7, 3.3, 8.9, "#9db6a9", 0.3);
-  mountain(2.1, -15.0, 5.1, 3.7, 8.0, "#8da99e", 0.1);
-  mountain(9.8, -13.8, 4.4, 3.2, 6.8, "#9db6a9", 0.35);
-  mountain(-10.9, -10.5, 3.0, 2.2, 5.3, "#6f9485", 0.1);
-  mountain(8.8, -10.7, 3.2, 2.0, 5.7, "#739787", 0.35);
   // Masonry fronts stand slightly proud of the true bevelled slab face.
   // The old middle-wall bricks ended at exactly z=0.87, sharing the slab's
   // vertical plane and fighting for depth whenever the camera zoomed.
@@ -1446,6 +1416,10 @@ export function createWorld(
   avatar.scale.setScalar(0.37);
   player.add(avatar);
   const legs = avatar.userData.legs;
+  const neighbours = createNeighbourhood({
+    root, host, structures: occludingStructures,
+    onResident(id) { stopWalking(); onResident(id); },
+  });
   const occlusion = createOcclusionController({
     camera,
     target: avatar,
@@ -1481,7 +1455,12 @@ export function createWorld(
     walking = false,
     routeSpeed = WALK_SPEED,
     routeStartedAt = 0,
-    arrival = null;
+    arrival = null,
+    residentArrivalFacing = null;
+  function releaseResident() {
+    neighbours.setWaitingResident(null);
+    delete canvas.dataset.residentDestination;
+  }
   const routeMaterial = new THREE.LineDashedMaterial({
     color: "#f7c75e",
     dashSize: 0.22,
@@ -1494,9 +1473,10 @@ export function createWorld(
   routeLine.renderOrder = 5;
   routeLine.visible = false;
   root.add(routeLine);
-  function startRoute(point, onArrival = null) {
-    const route = planRoute(player.position, point);
+  function startRoute(point, onArrival = null, checkedRoute = null) {
+    const route = checkedRoute || planRoute(player.position, point);
     if (!route.length) return false;
+    releaseResident();
     const pace = guidedTravelPace(route);
     routeSpeed = pace.speed;
     routeStartedAt = performance.now();
@@ -1520,6 +1500,7 @@ export function createWorld(
     return true;
   }
   function stopWalking() {
+    releaseResident();
     waypoints = [];
     arrival = null;
     walking = false;
@@ -1539,6 +1520,32 @@ export function createWorld(
       canvas.dataset.location = id;
       onArrival?.();
     });
+  }
+  function focusResident(id) {
+    const position = neighbours.getPosition(id);
+    if (!position) return false;
+    desiredTarget.set(position.x * .35, 3.1 + position.y * .15, position.z * .3);
+    targetZoom = 1.18;
+    return true;
+  }
+  function walkToResident(id, onArrival = null) {
+    const resident = neighbours.getPosition(id);
+    const approach = planResidentApproach(player.position, resident);
+    if (!approach) return false;
+    focusResident(id);
+    const started = startRoute(approach.position, () => {
+      residentArrivalFacing = Math.atan2(resident.x - player.position.x, resident.z - player.position.z);
+      player.rotation.y = residentArrivalFacing;
+      releaseResident();
+      onArrival?.(id);
+    }, approach.route);
+    // No chase: the selected neighbour waits at the exact position used to plan
+    // this route. An already-nearby traveller opens the conversation immediately.
+    if (started && walking) {
+      neighbours.setWaitingResident(id);
+      canvas.dataset.residentDestination = id;
+    }
+    return started;
   }
 
   // Small picture icons identify each stop without adding another Chinese glyph.
@@ -1679,6 +1686,7 @@ export function createWorld(
   }
   function setVisited(ids) {
     visited = new Set(ids || []);
+    neighbours.setProgress(ids);
     Object.entries(buttons).forEach(([key, b]) =>
       b.classList.toggle("visited", visited.has(key)),
     );
@@ -1725,6 +1733,8 @@ export function createWorld(
       -((e.clientY - r.top) / r.height) * 2 + 1,
     );
     raycaster.setFromCamera(pointer, camera);
+    const residentId = neighbours.hitTest(raycaster);
+    if (residentId) { stopWalking(); onResident(residentId); return; }
     const hits = raycaster.intersectObjects(interactables, false);
     if (hits.length) {
       select(hits[0].object.userData.place);
@@ -1836,6 +1846,7 @@ export function createWorld(
         (keys.has("s") || keys.has("arrowdown") ? 1 : 0) -
         (keys.has("w") || keys.has("arrowup") ? 1 : 0);
       if (dx || dz) {
+        releaseResident();
         waypoints = [];
         arrival = null;
         routeLine.visible = false;
@@ -1891,6 +1902,12 @@ export function createWorld(
         (leg, i) => (leg.rotation.x = Math.sin(walkPhase + i * Math.PI) * 0.3),
       );
     } else legs.forEach((leg) => (leg.rotation.x = 0));
+    // Arrival callbacks run before the frame's walking pose. Apply the greeting
+    // heading after that pose so the last travel segment cannot overwrite it.
+    if (residentArrivalFacing !== null) {
+      player.rotation.y = residentArrivalFacing;
+      residentArrivalFacing = null;
+    }
     destination.material.opacity = walking
       ? 0.65 + Math.sin(elapsed * 4) * 0.2
       : 0;
@@ -1918,11 +1935,14 @@ export function createWorld(
           (0.25 + (i % 4) * 0.23) * (1 + Math.sin(elapsed * 0.6 + i) * 0.15);
       });
     }
+    const neighboursPaused = Boolean(document.querySelector("#modal-root .modal-backdrop"));
+    neighbours.update(dt, elapsed, player.position, { paused: neighboursPaused });
     yuHeadroom.update(routeDelta);
     // Refresh camera/model matrices before projection and exact occlusion rays.
     // This presentation step never touches movement, routes, or collisions.
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
+    neighbours.layout(camera, width, height, neighboursPaused);
     for (const [id, p] of Object.entries(places)) {
       projected.copy(p.position).project(camera);
       const b = buttons[id];
@@ -1963,6 +1983,7 @@ export function createWorld(
     resizeObserver.disconnect();
     occlusion.destroy();
     yuHeadroom.destroy();
+    neighbours.destroy();
     canvas.removeEventListener("pointerdown", down);
     canvas.removeEventListener("pointermove", move);
     canvas.removeEventListener("pointerup", up);
@@ -2018,6 +2039,10 @@ export function createWorld(
       return occlusion.getState();
     },
     goToPlace,
+    setNeighbourProgress(ids) { neighbours.setProgress(ids); },
+    getNeighbourState() { return neighbours.getState(); },
+    focusResident,
+    walkToResident,
     stopWalking,
     focusPlace,
     setVisited,

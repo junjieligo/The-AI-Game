@@ -3,6 +3,7 @@ import { GUIDE_RECORDINGS } from "./guide-lines.js?v=1.7";
 import { ORDER_RECORDINGS } from "./order-recordings.js?v=1.7";
 import { RECORDED_CLIPS } from "./recordings.js?v=1.7";
 import { NAME_RECORDINGS, RETIRED_NAME_KEYS } from "./name-recordings.js?v=1.7";
+import { NEIGHBOUR_RECORDINGS, NEIGHBOUR_VOICE_PROFILES } from "./neighbour-recordings.js?v=1.41";
 
 // Retain existing human performances. Current Yu performances and previously
 // uncovered authored cues come from the local batch; custom names use fallback.
@@ -17,9 +18,11 @@ export const AUDIO_CLIPS = {
   ...ORDER_RECORDINGS,
   "traveller|十二元": RECORDED_CLIPS["narrator|十二元"],
   ...VOXCPM_RECORDINGS,
+  ...NEIGHBOUR_RECORDINGS,
 };
 
 export const VOICE_PROFILES = Object.freeze({
+  ...NEIGHBOUR_VOICE_PROFILES,
   yu: Object.freeze({
     label: "Yu",
     direction: "Soft, gentle, playful and slightly shy",
@@ -48,6 +51,10 @@ export const VOICE_PROFILES = Object.freeze({
 
 export function roleFromSpeaker(speaker = "") {
   const name = String(speaker).toLowerCase();
+  if (/xiaohe|小禾/.test(name)) return "xiaohe";
+  if (/grandma chen|陈奶奶/.test(name)) return "grandma";
+  if (/uncle lee|李叔/.test(name)) return "lee";
+  if (/\balan\b|阿兰|阿岚/.test(name)) return "alan";
   if (/\byu\b/.test(name)) return "yu";
   if (/server|seller|neighbou?r/.test(name)) return "server";
   if (/travell?er|player|learner|宝玉|小李|小白/.test(name)) return "traveller";
@@ -63,7 +70,7 @@ function localClipURL(path) {
     const pageURL = new URL(globalThis.location?.href || base);
     const url = new URL(path, baseURL);
     // Refresh revised recordings when a returning player loads this release.
-    url.searchParams.set("v", "1.7");
+    url.searchParams.set("v", "1.41");
     if (url.username || url.password) return null;
     if (pageURL.protocol === "file:" && url.protocol === "file:" && !url.host)
       return url.href;
@@ -319,7 +326,15 @@ export function createVoicePlayer({
         }
       }
       if (token !== generation) return false;
-      notice("The recording is unavailable. Trying the device voice.");
+      if (!profile.recordedOnly)
+        notice("The recording is unavailable. Trying the device voice.");
+    }
+
+    // A resident must keep their own recorded identity. Do not silently replace
+    // a missing/failed NPC clip with the shared device voice.
+    if (profile.recordedOnly) {
+      notice(`${profile.label}’s recording could not load. Tap Listen to try again.`);
+      return false;
     }
 
     mode = "device";

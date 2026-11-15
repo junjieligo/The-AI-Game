@@ -14,7 +14,9 @@ import {
   marketResumeStep,
 } from "./market.js?v=1.7";
 import { withSpeakingPractice } from "./practice-content.js?v=1.7";
-import { mountSpeakingPractice } from "./speaking-practice.js?v=1.7";
+import { createNeighbourEncounters } from "./neighbours.js?v=1.41";
+import { RESIDENTS, TRAIL_RESIDENTS, VOCAB_INTROS } from "./neighbours-content.js?v=1.41";
+import { residentPortrait } from "./neighbours-art.js?v=1.39";
 import {
   DRINKS,
   normaliseOrder,
@@ -23,14 +25,14 @@ import {
 } from "./orders.js?v=1.7";
 import { getGuideLine } from "./guide-lines.js?v=1.7";
 import { getGameTimeState } from "./game-time.js?v=1.7";
-import { createWorld } from "./world.js?v=1.26";
+import { createWorld } from "./world.js?v=1.41";
 import {
   LESSONS as BASE_LESSONS,
   PHRASES as BASE_PHRASES,
 } from "./lessons.js?v=1.7";
 import { createAvatarView, AVATAR_PRESETS } from "./avatar.js?v=1.7";
 import { YU_PORTRAIT } from "./yu.js?v=1.16";
-import { createVoicePlayer, roleFromSpeaker } from "./audio.js?v=1.7";
+import { createVoicePlayer, roleFromSpeaker } from "./audio.js?v=1.41";
 import { activityScene, setActivityOutcome } from "./activities.js?v=1.26";
 import { createSoundscape } from "./soundscape.js?v=1.26";
 import { createTaskTimer, formatElapsed } from "./task-timer.js?v=1.7";
@@ -57,6 +59,8 @@ let state = {
   marketPurchase: {},
   marketVersion: 0,
   cultureVersion: 0,
+  neighbourRounds: {},
+  neighbourVisits: {},
   timings: {},
   sound: true,
   music: true,
@@ -100,6 +104,10 @@ if (state.cultureVersion !== 1) {
   }
   state.cultureVersion = 1;
 }
+for (const key of ["neighbourRounds", "neighbourVisits"]) {
+  if (!state[key] || typeof state[key] !== "object" || Array.isArray(state[key])) state[key] = {};
+}
+let neighbourhood;
 let world,
   activeLesson,
   currentStep = 0,
@@ -115,6 +123,7 @@ let timingContext = false;
 let speakingPractice = null,
   practiceAudioBusy = false;
 function clearSpeakingPractice() {
+  neighbourhood?.clearMedia();
   speakingPractice?.destroy();
   speakingPractice = null;
   practiceAudioBusy = false;
@@ -406,7 +415,12 @@ function resolvedLesson(id) {
     id === "market"
       ? resolveMarketLesson(base, state.marketPurchase)
       : resolveOrderLesson(base, state.orders[id]);
-  return withSpeakingPractice(resolved);
+  const lesson = withSpeakingPractice(resolved);
+  for (const step of lesson.steps) {
+    if (step.speaker && !step.speaker.startsWith("Yu") && step.type !== "speak")
+      step.residentId = TRAIL_RESIDENTS[id];
+  }
+  return lesson;
 }
 // Keep stored step indices stable while showing only the chosen branch.
 function lessonProgressMarkup(lesson, index) {
@@ -442,40 +456,29 @@ function presentLessonIntro(id, instant = false) {
   const lesson = resolvedLesson(id);
   if (!lesson) return;
   activeLesson = lesson;
-  const available = unlocked(id),
-    completed = state.completed.includes(id),
-    resume =
-      Object.hasOwn(state.progress, id) &&
-      Number.isInteger(state.progress[id]) &&
-      state.progress[id] >= 0 &&
-      state.progress[id] < lesson.steps.length &&
-      taskTimer.get(id).inProgress;
-  if (available) startTaskTiming(id);
-  openModal(
-    `<div class="modal-eyebrow">CHONGQING · ${esc(lesson.place.toUpperCase())}</div><div class="welcome-header"><div class="yu-avatar">${cat}</div><div><div class="yu-tip-name">YU <span>YOUR LOCAL GUIDE</span></div><h2 id="modal-title">${esc(lesson.title)}</h2></div></div><p class="modal-intro">${id === "hotpot" && !state.started ? `I’m Yu. Let’s order something.` : esc(lesson.objective)}</p><div class="intro-phrases">${lesson.phrases.slice(0, 1).map(phraseRow).join("")}</div>${available ? taskTimerMarkup(id) : ""}<p class="muted-note">${available ? "Listen, reply, then say a sentence yourself." : "Finish the previous stop to unlock this one."}</p><div class="modal-footer"><span class="muted-note">${available ? `${id === "market" ? (resume ? marketRoute(state.marketPurchase).length : "Up to 7") : lesson.steps.length} activities` : "Follow your trail"}</span><button class="primary" id="begin-lesson">${!available ? "Back to your next stop" : resume ? (completed ? "Resume practice" : "Resume mission") : completed ? "Practise again" : "Let’s go"} <span>${iconMarkup("arrow-right")}</span></button></div>`,
-    false,
-    "intro",
-  );
-  if (instant) $("#modal-root .modal-backdrop")?.classList.add("hotpot-handoff");
-  $("#begin-lesson").onclick = () => {
-    if (!available) {
-      openLessonIntro(nextLesson().id);
-      return;
-    }
+  const available = unlocked(id), completed = state.completed.includes(id);
+  const resume = Object.hasOwn(state.progress, id) && Number.isInteger(state.progress[id]) &&
+    state.progress[id] >= 0 && state.progress[id] < lesson.steps.length && taskTimer.get(id).inProgress;
+  if (!available) {
+    openModal(`<div class="modal-eyebrow">YOUR NEXT ADVENTURE</div><h2 id="modal-title">${esc(lesson.title)}</h2><p class="modal-intro">Finish the previous stop to unlock this one.</p><button class="primary" id="begin-lesson">Back to your next stop ${iconMarkup("arrow-right")}</button>`, false, "intro");
+    $("#begin-lesson").onclick = () => openLessonIntro(nextLesson().id);
+    return;
+  }
+  startTaskTiming(id);
+  neighbourhood.introduce(lesson, { resume, completed, onBegin() {
     state.started = true;
-    currentStep = resume
-      ? Math.min(state.progress[id], lesson.steps.length - 1)
-      : 0;
+    currentStep = resume ? Math.min(state.progress[id], lesson.steps.length - 1) : 0;
     activeLesson = lesson;
+    if (!resume) delete state.neighbourRounds[id];
     if (!resume && id === "market") {
       state.marketPurchase = normaliseMarketOrder();
       taskTimer.start(id, { restart: true });
     }
-    if (!resume && ["hotpot", "cafe"].includes(id))
-      state.orders[id] = normaliseOrder(id);
+    if (!resume && ["hotpot", "cafe"].includes(id)) state.orders[id] = normaliseOrder(id);
     save();
     renderStep();
-  };
+  }});
+  if (instant) $("#modal-root .modal-backdrop")?.classList.add("hotpot-handoff");
 }
 
 function stampText(id) {
@@ -578,7 +581,7 @@ function renderStep() {
   }
   const help = helpForStep(step, { translations: state.translations });
   openModal(
-    `<div class="modal-eyebrow">${esc(lesson.place.toUpperCase())} · MISSION 0${LESSONS.findIndex((l) => l.id === lesson.id) + 1}</div><h2 id="modal-title">${esc(lesson.title)}</h2>${taskTimerMarkup(lesson.id)}${lessonProgressMarkup(lesson, currentStep)}<div class="lesson-flow" aria-label="Activity steps"><span class="flow-current" data-flow="listen">1 · Listen</span><span data-flow="choose">2 · ${step.type === "build" ? "Build" : step.preference ? "Reply" : "Choose"}</span><span data-flow="continue">3 · Continue</span></div>${activityScene(lesson.id, currentStep, step)}${step.orderSummary ? `<div class="order-summary"><strong lang="zh">${esc(step.orderSummary.zh)}</strong><span class="translation ${help.english ? "" : "hidden"}">${esc(step.orderSummary.en)}</span></div>` : ""}<div class="speaker-bar"><span>${step.speaker?.startsWith("Yu") ? cat : "◡"}</span>${esc(step.speaker || "YU")}</div><div class="speech-card"><div class="chinese" lang="zh">${esc(step.zh)}</div><div class="pinyin ${state.pinyin ? "" : "hidden"}">${esc(step.py)}</div><div class="translation ${help.english ? "" : "hidden"}">${esc(step.en)}</div>${listenButton(step.zh, roleFromSpeaker(step.speaker), true)}</div><div class="display-toggles"><label><input type="checkbox" id="pinyin-toggle" ${state.pinyin ? "checked" : ""}> Pinyin</label><label><input type="checkbox" id="translation-toggle" ${help.english ? "checked" : ""}> ${help.label}</label></div><div class="step-guidance"><p class="step-prompt">${esc(step.prompt)}</p><button id="step-hint" class="hint-button" aria-label="Show a hint" aria-expanded="false" aria-controls="step-hint-text"><b>!</b> Hint</button></div><p id="step-hint-text" class="step-hint-text" hidden>${esc(step.hint || HINTS[lesson.id]?.[currentStep] || step.prompt)}</p><div id="step-interaction">${step.type === "build" ? `<div class="sentence-tray" id="sentence-tray" aria-label="Your sentence"></div><div class="token-bank">${step.tokens.map((t, i) => `<button class="token" data-token="${i}" lang="zh">${esc(t)}</button>`).join("")}</div><div class="build-actions"><button class="secondary" id="clear-sentence">Start again</button><button class="primary" id="check-sentence" disabled>Check sentence <span>${iconMarkup("check")}</span></button></div>` : `<div class="options">${step.options.map((o, i) => answerMarkup(o, i, help)).join("")}</div>`}</div><div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div><div class="modal-footer"><span class="keyboard-hint">${step.type === "choice" ? `Tip: use ${step.options.length === 2 ? "1 or 2" : "1, 2 or 3"} to choose.` : "Tap a selected word to remove it."}</span><button class="primary hidden" id="next-step">${currentStep === lesson.steps.length - 1 ? "Collect your stamp" : "Keep going"} <span>${iconMarkup("arrow-right")}</span></button></div>`,
+    `<div class="modal-eyebrow">${esc(lesson.place.toUpperCase())} · MISSION 0${LESSONS.findIndex((l) => l.id === lesson.id) + 1}</div><h2 id="modal-title">${esc(lesson.title)}</h2>${taskTimerMarkup(lesson.id)}${lessonProgressMarkup(lesson, currentStep)}<div class="lesson-flow" aria-label="Activity steps"><span class="flow-current" data-flow="listen">1 · Listen</span><span data-flow="choose">2 · ${step.type === "build" ? "Build" : step.preference ? "Reply" : "Choose"}</span><span data-flow="continue">3 · Continue</span></div>${activityScene(lesson.id, currentStep, step)}${step.orderSummary ? `<div class="order-summary"><strong lang="zh">${esc(step.orderSummary.zh)}</strong><span class="translation ${help.english ? "" : "hidden"}">${esc(step.orderSummary.en)}</span></div>` : ""}<div class="speaker-bar"><span>${step.speaker?.startsWith("Yu") ? cat : step.residentId ? residentPortrait(step.residentId) : "◡"}</span>${esc(step.residentId ? `${RESIDENTS[step.residentId].zh} · ${RESIDENTS[step.residentId].en}` : step.speaker || "YU")}</div><div class="speech-card"><div class="chinese" lang="zh">${esc(step.zh)}</div><div class="pinyin ${state.pinyin ? "" : "hidden"}">${esc(step.py)}</div><div class="translation ${help.english ? "" : "hidden"}">${esc(step.en)}</div>${listenButton(step.zh, step.residentId || roleFromSpeaker(step.speaker), true)}</div><div class="display-toggles"><label><input type="checkbox" id="pinyin-toggle" ${state.pinyin ? "checked" : ""}> Pinyin</label><label><input type="checkbox" id="translation-toggle" ${help.english ? "checked" : ""}> ${help.label}</label></div><div class="step-guidance"><p class="step-prompt">${esc(step.prompt)}</p><button id="step-hint" class="hint-button" aria-label="Show a hint" aria-expanded="false" aria-controls="step-hint-text"><b>!</b> Hint</button></div><p id="step-hint-text" class="step-hint-text" hidden>${esc(step.hint || HINTS[lesson.id]?.[currentStep] || step.prompt)}</p><div id="step-interaction">${step.type === "build" ? `<div class="sentence-tray" id="sentence-tray" aria-label="Your sentence"></div><div class="token-bank">${step.tokens.map((t, i) => `<button class="token" data-token="${i}" lang="zh">${esc(t)}</button>`).join("")}</div><div class="build-actions"><button class="secondary" id="clear-sentence">Start again</button><button class="primary" id="check-sentence" disabled>Check sentence <span>${iconMarkup("check")}</span></button></div>` : `<div class="options">${step.options.map((o, i) => answerMarkup(o, i, help)).join("")}</div>`}</div><div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div><div class="modal-footer"><span class="keyboard-hint">${step.type === "choice" ? `Tip: use ${step.options.length === 2 ? "1 or 2" : "1, 2 or 3"} to choose.` : "Tap a selected word to remove it."}</span><button class="primary hidden" id="next-step">${currentStep === lesson.steps.length - 1 ? "Collect your stamp" : "Keep going"} <span>${iconMarkup("arrow-right")}</span></button></div>`,
     false,
     "lesson",
   );
@@ -637,68 +640,7 @@ function renderStep() {
 }
 
 function renderSpeakingStep(lesson, step) {
-  openModal(
-    `<div class="modal-eyebrow">${esc(lesson.place.toUpperCase())} · YOUR TURN</div>
-    <h2 id="modal-title">Say it yourself</h2>${taskTimerMarkup(lesson.id)}
-    ${lessonProgressMarkup(lesson, currentStep)}
-    <div class="lesson-flow" aria-label="Practice steps"><span data-flow="listen">1 · Listen</span><span class="flow-current" data-flow="choose">2 · Say it</span><span data-flow="continue">3 · Stamp</span></div>
-    ${activityScene(lesson.id, step.sceneIndex, step)}
-    <div class="speech-card"><div class="chinese" lang="zh">${esc(step.zh)}</div><div class="pinyin ${state.pinyin ? "" : "hidden"}">${esc(step.py)}</div><div class="translation ${state.translations ? "" : "hidden"}">${esc(step.en)}</div>${listenButton(step.zh, "narrator", true)}</div>
-    <div class="display-toggles"><label><input type="checkbox" id="pinyin-toggle" ${state.pinyin ? "checked" : ""}> Pinyin</label><label><input type="checkbox" id="translation-toggle" ${state.translations ? "checked" : ""}> English help</label></div>
-    <div id="speaking-practice"></div>
-    <div id="practice-achievement" class="feedback hidden" role="status">You said it! Your stamp is ready.</div>
-    <div class="modal-footer"><span></span><button class="primary" id="practice-finish" disabled>Collect your stamp <span>${iconMarkup("arrow-right")}</span></button></div>`,
-    false,
-    "lesson",
-  );
-  $("#modal-root .modal").classList.add("practice-modal");
-  const finish = $("#practice-finish"),
-    achievement = $("#practice-achievement");
-  $("#pinyin-toggle").onchange = (event) => {
-    state.pinyin = event.target.checked;
-    $("#modal-root .pinyin").classList.toggle("hidden", !state.pinyin);
-    save();
-  };
-  $("#translation-toggle").onchange = (event) => {
-    state.translations = event.target.checked;
-    $("#modal-root .translation").classList.toggle(
-      "hidden",
-      !state.translations,
-    );
-    save();
-  };
-  speakingPractice = mountSpeakingPractice($("#speaking-practice"), {
-    filename: `trip-to-the-east-${lesson.id}`,
-    onBeforeRecord: () => voicePlayer.stop(),
-    onState: (status) => {
-      practiceAudioBusy = [
-        "requesting",
-        "recording",
-        "stopping",
-        "playing",
-      ].includes(status);
-      soundscape.setPracticeQuiet(practiceAudioBusy);
-      document
-        .querySelectorAll("#modal-root [data-speak]")
-        .forEach((b) => (b.disabled = practiceAudioBusy));
-    },
-    onReady: (ready) => {
-      answered = ready;
-      finish.disabled = !ready;
-      achievement.classList.toggle("hidden", !ready);
-      document
-        .querySelectorAll("[data-flow]")
-        .forEach((el) =>
-          el.classList.toggle(
-            "flow-current",
-            el.dataset.flow === (ready ? "continue" : "choose"),
-          ),
-        );
-    },
-  });
-  finish.onclick = () => {
-    if (answered) completeLesson();
-  };
+  neighbourhood.practise(lesson, { onComplete: completeLesson });
 }
 
 function feedback(message, correct) {
@@ -891,6 +833,7 @@ function completeLesson() {
   const already = state.completed.includes(lesson.id);
   if (!already) state.completed.push(lesson.id);
   delete state.progress[lesson.id];
+  delete state.neighbourRounds[lesson.id];
   save();
   updateOverview();
   const all = state.completed.length === LESSONS.length;
@@ -924,7 +867,7 @@ function openPhrasebook() {
       ? filtered
           .map(
             (p) =>
-              `<div class="phrasebook-card"><div class="phrasebook-tag">${esc(LESSONS.find((l) => l.id === p.lesson)?.place || "Travel essentials")}</div><div class="chinese" lang="zh">${esc(p.zh)}</div><div class="pinyin ${state.pinyin ? "" : "hidden"}">${esc(p.py)}</div><div class="translation">${esc(p.en)}</div>${listenButton(p.zh)}</div>`,
+              `<div class="phrasebook-card"><div class="phrasebook-tag">${esc(LESSONS.find((l) => l.id === p.lesson)?.place || "Travel essentials")}</div><div class="chinese" lang="zh">${esc(p.zh)}</div><div class="pinyin ${state.pinyin ? "" : "hidden"}">${esc(p.py)}</div><div class="translation">${esc(p.en)}</div>${listenButton(p.zh, p.residentId || "narrator")}</div>`,
           )
           .join("")
       : '<p class="empty-results">No phrases found. Try “water”, “hello” or “多少钱”.</p>';
@@ -959,6 +902,8 @@ function openJournal() {
       timingContext = false;
       state.completed = [];
       state.progress = {};
+      state.neighbourRounds = {};
+      state.neighbourVisits = {};
       state.orders = {};
       state.marketPurchase = normaliseMarketOrder();
       state.started = false;
@@ -1053,9 +998,37 @@ function hideLoading() {
   el.style.opacity = "0";
   setTimeout(() => el.remove(), 600);
 }
+neighbourhood = createNeighbourEncounters({
+  openModal, closeModal, listenButton,
+  stopVoice: () => voicePlayer.stop(),
+  setAudioBusy(busy) { practiceAudioBusy = busy; soundscape.setPracticeQuiet(busy); },
+  getPreferences: () => ({ pinyin: state.pinyin, translations: state.translations }),
+  setPreferences(value) { Object.assign(state, value); save(); },
+  getCompleted: () => state.completed,
+  getLesson: resolvedLesson,
+  onBeginTrail: openLessonIntro,
+  onFindResident: (id) => {
+    const resident = RESIDENTS[id];
+    if (!resident) return;
+    const started = world?.walkToResident?.(id, () => neighbourhood.meet(id));
+    if (!started) toast(`Please move to a clear path and try finding ${resident.en} again.`);
+    else if ($("#world").dataset.travelling === "true") {
+      // The directory closes back to the quest panel; move keyboard focus to the
+      // map so arrow keys can take over the walk instead of scrolling that panel.
+      $("#world").focus({ preventScroll: true });
+      toast(`Walking to ${resident.en}…`);
+    }
+  },
+  getRound: (id) => state.neighbourRounds[id],
+  saveRound(id, round) { state.neighbourRounds[id] = round; save(); },
+  timerMarkup: taskTimerMarkup,
+  onRevisit(id) { state.neighbourVisits[id] = (Number(state.neighbourVisits[id]) || 0) + 1; save(); },
+});
+$("#neighbours-open").onclick = () => neighbourhood.directory();
 try {
   world = createWorld($("#world"), {
     onSelect: openLessonIntro,
+    onResident: (id) => neighbourhood.meet(id),
     onTravel: (id) => (unlocked(id) ? startTaskTiming(id) : pauseTaskTiming()),
     onReady: hideLoading,
   });
@@ -1132,6 +1105,12 @@ function personaliseContent() {
           : v;
   LESSONS = convert(BASE_LESSONS);
   PHRASES = convert(BASE_PHRASES);
+  for (const [trail, cards] of Object.entries(VOCAB_INTROS)) {
+    for (const card of cards) {
+      if (!PHRASES.some((phrase) => phrase.zh === card.word.zh))
+        PHRASES.push({ ...card.word, id: `neighbour-${card.id}`, lesson: trail, category: "Neighbourhood", residentId: TRAIL_RESIDENTS[trail] });
+    }
+  }
 }
 function showCreator() {
   closeModal();

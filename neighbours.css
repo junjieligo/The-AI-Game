@@ -1,0 +1,79 @@
+/* Resident conversations use the existing paper, sage and terracotta palette. */
+.neighbour-modal { width: min(740px, 100%); color: #29423d; }
+.neighbour-modal [hidden] { display: none !important; }
+.neighbour-modal h2 { font-size: clamp(25px, 4vw, 35px); margin: 15px 0 20px; line-height: 1.18; }
+.neighbour-identity { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.neighbour-portrait { width: 66px; height: 66px; flex: 0 0 66px; border-radius: 50%; overflow: hidden; background: #e8eddb; }
+.neighbour-portrait svg, .neighbour-directory-portrait svg { width: 100%; height: 100%; display: block; }
+.neighbour-identity strong { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 18px; }
+.neighbour-identity strong > span:last-child { font-size: 15px; color: #586b54; }
+.neighbour-identity small { display: block; margin-top: 4px; color: #586b54; font-size: 13px; }
+.neighbour-scene { width: 100%; overflow: hidden; border-radius: 22px; background: #edf0df; border: 1px solid #dce3ce; margin: 10px 0 17px; }
+.neighbour-scene > svg { width: 100%; height: auto; max-height: 235px; display: block; }
+.neighbour-scene-small > svg { max-height: 150px; }
+.neighbour-word { display: flex; gap: 12px 20px; align-items: center; flex-wrap: wrap; padding: 10px 0 17px; border-bottom: 1px solid #dde3d5; }
+.neighbour-word strong { font-size: 40px; line-height: 1.25; font-family: var(--font-chinese, inherit); }
+.neighbour-word > span { font-size: 17px; color: #5e7157; }
+.neighbour-word > span:last-of-type { color: #9b5237; }
+.neighbour-word .listen-button { margin-left: auto; flex-shrink: 0; }
+.neighbour-context { display: grid; gap: 14px; margin-top: 19px; }
+.neighbour-context .chinese { font-size: 21px; }
+.neighbour-context .translation { font-size: 15px; line-height: 1.5; margin-top: 5px; }
+.neighbour-phrase { position: relative; min-width: 0; }
+.neighbour-phrase .pinyin { font-size: 15px; margin: 5px 0; }
+.neighbour-phrase .speech-audio { position: static; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.neighbour-pages { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
+.neighbour-pages button { width: 34px; height: 34px; border: 1px solid #cbd6c2; border-radius: 50%; background: transparent; color: #52674b; }
+.neighbour-pages button[aria-current="step"] { background: #597c67; color: #fffdf2; border-color: #597c67; }
+.neighbour-stages { display: flex; gap: 7px; margin: 15px 0; font-size: 13px; }
+.neighbour-stages span { flex: 1; padding: 9px 11px; background: #edf0e4; color: #65765f; border-radius: 9px; }
+.neighbour-stages .current { background: #ecdbb4; color: #59442b; font-weight: 800; }
+.neighbour-stages .done { background: #dce8d6; }
+.neighbour-prompt { margin: 15px 0 12px; font-size: 17px; font-weight: 700; line-height: 1.5; }
+.neighbour-cue { padding: 16px 20px; background: #e8eee1; border-radius: 16px; margin-bottom: 14px; }
+.neighbour-cue .chinese, .neighbour-example .chinese { font-size: clamp(22px, 3.7vw, 29px); line-height: 1.5; }
+.neighbour-cue .translation, .neighbour-example .translation { margin-top: 5px; font-size: 15px; }
+.neighbour-example { border: 1.5px solid #d7dfcc; padding: 16px 20px; border-radius: 16px; background: #fffdf4; margin: 12px 0; }
+.neighbour-small-label { display: block; font-size: 10px; letter-spacing: .12em; color: #66775c; font-weight: 800; margin-bottom: 8px; }
+.neighbour-support { padding: 13px 17px; border: 1px dashed #a8b79c; border-radius: 12px; font-size: 22px; background: #f3f5e9; }
+.neighbour-reveal { min-height: 42px; }
+.neighbour-self-check { color: #456741; background: #e8efde; padding: 13px 17px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.neighbour-modal .speaking-practice { padding: 16px; }
+.neighbour-modal .practice-actions { gap: 8px; }
+.neighbour-modal .practice-actions button { min-height: 44px; padding: 11px 18px; font-size: 14px; }
+.neighbour-modal .modal-footer { gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 24px; }
+.neighbour-modal .modal-footer .primary, .neighbour-modal .modal-footer .secondary { min-height: 46px; padding: 12px 20px; font-size: 15px; }
+.neighbour-directory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+.neighbour-person { display: flex; flex-direction: column; align-items: center; padding: 22px 14px; border: 1px solid #d7dfcc; border-radius: 22px; background: #f0f3e6; color: #29423d; transition: transform .18s, background .18s; }
+.neighbour-person:hover { background: #e7eedc; transform: translateY(-2px); }
+.neighbour-directory-portrait { display: block; width: 108px; height: 108px; border-radius: 50%; overflow: hidden; margin-bottom: 12px; background: #e2e9d5; }
+.neighbour-person strong { font-size: 23px; }
+.neighbour-person > span:not(.neighbour-directory-portrait) { font-size: 15px; margin-top: 5px; }
+.neighbour-person small { font-size: 12px; color: #5a6d50; margin-top: 8px; text-align: center; }
+.neighbour-visit-links { display: flex; flex-wrap: wrap; gap: 9px; }
+.neighbour-visit-links .secondary { display: flex; align-items: center; gap: 8px; padding: 12px 17px; }
+.neighbours-open { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #edf2e5; color: #3e5c4d; font-size: 14px; font-weight: 800; padding: 15px 14px; border: 0; border-top: 1px solid #dbe3d2; cursor: pointer; }
+.neighbours-open:hover { background: #e4eddc; }
+.neighbour-portrait.practice-ready { animation: neighbour-nod .65s ease-in-out; }
+@keyframes neighbour-nod { 50% { transform: translateY(3px) rotate(-3deg); } }
+@media (max-width: 540px) {
+  .neighbour-modal { padding: 24px 18px; }
+  .neighbour-modal h2 { margin-top: 15px; }
+  .neighbour-word { gap: 8px 12px; }
+  .neighbour-word strong { font-size: 32px; }
+  .neighbour-word > span { font-size: 15px; }
+  .neighbour-identity { gap: 10px; }
+  .neighbour-identity strong { gap: 4px 9px; }
+  .neighbour-portrait { width: 54px; height: 54px; flex-basis: 54px; }
+  .neighbour-stages span { padding: 8px 7px; font-size: 12px; }
+  .neighbour-scene-small > svg { max-height: 120px; }
+  .neighbour-context .chinese { font-size: 19px; }
+  .neighbour-directory { gap: 10px; }
+  .neighbour-person { padding: 17px 8px; }
+  .neighbour-directory-portrait { width: 88px; height: 88px; }
+  .neighbour-modal .modal-footer { align-items: stretch; }
+  .neighbour-modal .modal-footer button { flex: 1 1 180px; }
+}
+@media (prefers-reduced-motion: reduce) { .neighbour-person, .neighbour-portrait.practice-ready { animation: none; transition: none; } }
+
+.neighbour-context-note { margin: 16px 0 8px; color: #586b54; font-size: 15px; line-height: 1.5; }

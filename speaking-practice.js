@@ -35,6 +35,7 @@ export function recordingExtension(mimeType = "") {
 export function createPracticeRecorder({
   onChange = () => {},
   onBeforeRecord = () => {},
+  openEnded = false,
   environment = {},
 } = {}) {
   const env = { ...defaultEnvironment(), ...environment };
@@ -53,7 +54,7 @@ export function createPracticeRecorder({
     seconds: 0,
     url: null,
     mimeType: "",
-    message: "Say the sentence in your own voice.",
+    message: openEnded ? "Say your own idea in Mandarin." : "Say the sentence in your own voice.",
   };
   const snapshot = () => ({ ...current });
   const emit = (changes) => {
@@ -180,7 +181,7 @@ export function createPracticeRecorder({
         const type = activeRecorder.mimeType || chunks[0]?.type || "audio/webm";
         releaseCapture();
         if (seconds < MIN_RECORDING_SECONDS || !chunks.length) {
-          fail("Try once more and say the whole sentence.");
+          fail(openEnded ? "Try once more and say your own idea." : "Try once more and say the whole sentence.");
           return;
         }
         const blob = new env.Blob(chunks, { type });
@@ -195,7 +196,7 @@ export function createPracticeRecorder({
           seconds,
           mimeType: type,
           url: env.URL.createObjectURL(blob),
-          message: "Your voice, your Mandarin! Play it back.",
+          message: openEnded ? "Your idea, in Mandarin! Play it back." : "Your voice, your Mandarin! Play it back.",
         });
       };
       // Capture the exact stop time independently of the asynchronously emitted
@@ -279,7 +280,7 @@ export function createPracticeRecorder({
       ready: false,
       method: null,
       seconds: 0,
-      message: "Say the sentence aloud, then tap I’ve said it.",
+      message: openEnded ? "Say your own idea aloud, then tap I’ve said it." : "Say the sentence aloud, then tap I’ve said it.",
     });
   }
   function confirmAloud() {
@@ -311,6 +312,7 @@ export function mountSpeakingPractice(
     onBeforeRecord = () => {},
     onState = () => {},
     filename = "mandarin-practice",
+    openEnded = false,
     environment,
   } = {},
 ) {
@@ -396,6 +398,7 @@ export function mountSpeakingPractice(
   }
   const controller = createPracticeRecorder({
     environment,
+    openEnded,
     onChange: render,
     onBeforeRecord: () => {
       silencePlayback();
